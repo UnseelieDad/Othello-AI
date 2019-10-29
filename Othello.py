@@ -123,3 +123,8 @@ while not done:
     # It can happen that a piece is played so that pieces or rows of pieces in more than one direction are trapped btween the new piece played
     # and other pieces of the same color. In this case all the pieces in all viable directions are turned over
     # Game ends when neither player can move to capture a piece or the board is full
+
+    # TODO: Features
+    # Player 1 and 2 Scores and turn tracking
+    # First four turns: Adding a the right color piece when the mouse is clicked, checking for invalid spaces
+
