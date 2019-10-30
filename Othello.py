@@ -150,9 +150,17 @@ def updateScore():
     #global textList    
     global textList
 
+    player1ScoreTextRect = textList[3][1]
+    player2ScoreTextRect = textList[4][1]
+
     # If there are scores in the list remove them.
     if len(textList) > 3:
         textList = textList[:-2]
+
+    player1ScoreText = FONT.render("{}".format(player1Score), True, GREEN)
+    player2ScoreText = FONT.render("{}".format(player2Score), True, GREEN)
+
+
 
     textList.extend([(player1ScoreText, player1ScoreTextRect), (player2ScoreText, player2ScoreTextRect)])
 
@@ -164,6 +172,14 @@ def drawText():
 def getValidSpaces(board):
 
     validSpaces = []
+    # integers representing directions
+    # Starts with 1 = left and counts up and clockwise through 8 directions
+    # 1: left 2: up and left 3: up 4: up and right 5: right 6: down and right 7: down 8: down and left
+    enemyDirections = []
+
+    flankedPieces = []
+
+    validMoves = []
 
     for x in range(ROWS):
         for y in range(COLS):
@@ -174,70 +190,175 @@ def getValidSpaces(board):
                 oppositeColor = "b"
             
             # check space to the left
-            if x > 1 and currentSpace not in validSpaces:
+            if x > 1:
                 if board[x - 1][y][1] is oppositeColor:
                     for z in range(2,x):
                         if board[x - z][y][1] is turn:
-                            validSpaces.append(currentSpace)
-                            break;
+                            enemyDirections.append(1)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
 
             # Check spaces to the right
-            if x < 7 and currentSpace not in validSpaces:
+            if x < 7:
                 if board[x + 1][y][1] is oppositeColor:
                     for z in range(2, COLS - x):
                         if board[x + z][y][1] is turn:
-                            validSpaces.append(currentSpace)
-                            break;
+                            enemyDirections.append(5)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
             
             # check spaces above
-            if y > 1 and currentSpace not in validSpaces:
+            if y > 1:
                 if board[x][y - 1][1] is oppositeColor:
                     for z in range(2,y):
                         if board[x][y-z][1] is turn:
-                            validSpaces.append(currentSpace)
-                            break;
+                            enemyDirections.append(3)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
 
             # check spaces below
-            if y < 7 and currentSpace not in validSpaces:
+            if y < 7:
                 if board[x][y + 1][1] is oppositeColor:
                     for z in range(2, ROWS - y):
                         if board[x][y + z][1] is turn:
-                            validSpaces.append(currentSpace)
-                            break;
+                            enemyDirections.append(7)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
 
             # check up and left
-            if x > 1 and y > 1 and currentSpace not in validSpaces:
+            if x > 1 and y > 1:
                 if board[x - 1][y - 1][1] is oppositeColor:
                     for zx, zy in zip(range(2,x), range(2,y)):
                         if board[x - z][y - z][1] is turn:
-                            validSpaces.append(currentSpace);
-                            break;
+                            enemyDirections.append(2)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
 
             # check down and right
-            if x < 7 and y < 7 and currentSpace not in validSpaces:
+            if x < 7 and y < 7:
                 if board[x + 1][y + 1][1] is oppositeColor:
                     for zx, zy in zip(range(2, COLS - x), range(ROWS - y)):
                         if board[x + zx][y + zy][1] is turn:
-                            validSpaces.append(currentSpace);
-                            break;
+                            enemyDirections.append(6)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
 
             # check down and left
-            if x > 1 and y < 7 and currentSpace not in validSpaces:
+            if x > 1 and y < 7:
                 if board[x - 1][y + 1][1] is oppositeColor:
                     for zx, zy in zip(range(2, x), range(2, ROWS - y)):
                         if board[x - z][y + z][1] is turn:
-                            validSpaces.append(currentSpace);
-                            break;
+                            enemyDirections.append(7)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
 
             # check up and right
-            if x < 7 and y > 1 and currentSpace not in validSpaces:
+            if x < 7 and y > 1:
                 if board[x + 1][y - 1][1] is oppositeColor:
                     for zx, zy in zip(range(2, COLS - x), range(2,y)):
                         if board[x + z][y - z][1] is turn:
-                            validSpaces.append(currentSpace);
-                            break;
+                            enemyDirections.append(4)
+                            if currentSpace not in validSpaces:
+                                validSpaces.append(currentSpace)
+                            break
+            flankedPieces.append(tuple(enemyDirections))
+            enemyDirections = []
 
-    return validSpaces
+    validMoves = zip(validSpaces, flankedPieces)
+
+    return validMoves
+
+def flipLines(space, validMoves, board):
+
+    print validMoves
+
+    for move in validMoves:
+        if space is move[0]:
+            print move
+            flipDirections = move[1]
+            print flipDirections
+            break
+
+    for x in range(ROWS):
+        for y in range(COLS):
+            if board[x][y] is space:
+                for direction in flipDirections:
+                    if direction is 1:
+                        for z in range(1,x):
+                            if board[x-z][y][1] is turn:
+                                break
+                            else:
+                                # flip the piece
+                                flipPiece(board[x-z][y])
+                        continue
+                    if direction is 2:
+                        for zx, zy in zip(range(1,x), range(1,y)):
+                            if board[x-zx][y-zy][1] is turn:
+                                break
+                            else:
+                                flipPiece(board[x-zx][y-zy])
+                        continue
+                    if direction is 3:
+                        for z in range(1,y):
+                            if board[x][y-z][1] is turn:
+                                break
+                            else:
+                                flipPiece(board[x][y-z])
+                        continue
+                    if direction is 4:
+                        for zx, zy in zip(range(1, COLS-x), range(1,y)):
+                            if board[x+zx][y-zy][1] is turn:
+                                break
+                            else:
+                                flipPiece(board[x+zx][y-zy])
+                        continue
+                    if direction is 5:
+                        for z in range(1, COLS-x):
+                            if board[x+z][y][1] is turn:
+                                break
+                            else:
+                                flipPiece(board[x+z][y])
+                        continue
+                    if direction is 6:
+                        for zx, zy in zip(range(1, COLS-x), range(1,ROWS-y)):
+                            if board[x+zx][y+zy][1] is turn:
+                                break
+                            else:
+                                flipPiece(board[x+zx][y+zy])
+                        continue
+                    if direction is 7:
+                        for z in range(1, ROWS-y):
+                            if board[x][y+z][1] is turn:
+                                break
+                            else:
+                                flipPiece(board[x][y+z])
+                        continue
+                    if direction is 8:
+                        for zx, zy in zip(range(1,x), range(1,ROWS-y)):
+                            if board[x-zx][y+zy][1] is turn:
+                                break
+                            else:
+                                flipPiece(board[x-zx][y+zy])
+                break
+
+
+
+def flipPiece(square):
+
+    if turn is "b":
+        square[1] = "w"
+    else:
+        square[1] = "b"
+
+
+    
 
 # Main       
 
@@ -266,7 +387,7 @@ done = False
 while not done:
     
     # calculate valid spaces based off of the current board state
-    validSpaces = getValidSpaces(board)
+    validMoves = getValidSpaces(board)
 
     # Main events loop
     # If the x button on the window is clicked, end the game
@@ -290,11 +411,14 @@ while not done:
                                 square[1] = "b"
                             else:
                                 square[1] = "w"
+                            flipLines(square, validMoves, board)
 
                             updateTurn()
                         # If the mouse moved, and if the space is valid, highlight the square
-                        if event.type is pygame.MOUSEMOTION and square in validSpaces:
-                            square[1] = "h"
+                        if event.type is pygame.MOUSEMOTION:
+                            for move in validMoves:
+                                if square is move[0]:
+                                    square[1] = "h"
                     # Un-highlight any square the mouse doesn't touch or isn't valid
                     elif square[1] is "h":
                         square[1] = "e"
@@ -318,4 +442,5 @@ while not done:
     # Placed disk can flip all directions if valid. Hor, vert, diag
     # Only flips opposing pieces between disks
     # Can only flip disks in a direct line from the placed disk
+    # Scoring
 
