@@ -15,7 +15,7 @@ ROWS, COLS = 8, 8
 BOARD_X, BOARD_Y = 480, 480
 SQUARE_X, SQUARE_Y = BOARD_X / 8, BOARD_Y / 8
 CORNER_X, CORNER_Y = (RES_X / 2) - (BOARD_X / 2), (RES_Y / 2) - (BOARD_Y / 2)
-FONT = font = pygame.font.Font("freesansbold.ttf", 32)
+FONT = pygame.font.Font("freesansbold.ttf", 32)
 
 
 # Global
@@ -127,7 +127,12 @@ def createText():
 
 def updateTurn():
 
-    #global textList
+    global turn
+    
+    if turn is "b":
+        turn = "w"
+    else:
+        turn = "b"
 
     if textList[2]:
         oldTurnText = textList.pop(2)
@@ -135,7 +140,7 @@ def updateTurn():
         if turn is player1Color:
             newTurnText = (FONT.render("Player 1's Turn", True, GREEN), oldTurnText[1])
         else:
-            newTurnText = (FRONT.render("Player 2's Turn", True, GREEN), oldTurnText[1])
+            newTurnText = (FONT.render("Player 2's Turn", True, GREEN), oldTurnText[1])
 
         textList.insert(2, newTurnText)
 
@@ -199,13 +204,13 @@ while not done:
                     # If the mouse is over the square and the square is empty
                     if square[0].collidepoint(pos) and square[1] is not "b" and square[1] is not "w":
                         # if it was a click place a piece
-                        if event.type is pygame.MOUSEBUTTONUP:
+                        if event.type is pygame.MOUSEBUTTONUP and square[1] is "h":
                             if turn is "b": 
                                 square[1] = "b"
-                                turn = "w"
                             else:
                                 square[1] = "w"
-                                turn = "b"
+
+                            updateTurn()
                         # If the mouse moved, highlight the square
                         if event.type is pygame.MOUSEMOTION:
                             square[1] = "h"
