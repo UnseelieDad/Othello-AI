@@ -142,10 +142,7 @@ def updateTurn():
         else:
             newTurnText = (FONT.render("Player 2's Turn", True, GREEN), oldTurnText[1])
 
-        textList.insert(2, newTurnText)
-
-
-    
+        textList.insert(2, newTurnText)   
 
 def updateScore():
 
@@ -177,6 +174,7 @@ else:
 
 # Create the main window
 screen = pygame.display.set_mode((RES_X, RES_Y))
+pygame.display.set_caption("Othello")
 done = False
 
 # Create the board
