@@ -10,6 +10,7 @@ GREEN = (0, 100, 0)
 BLACK = (0, 0, 0)
 WHITE = (100, 100, 100)
 ORANGE = (255, 140, 0)
+LGREY = (211, 211, 211)
 RES_X, RES_Y = 1120, 630
 ROWS, COLS = 8, 8
 BOARD_X, BOARD_Y = 480, 480
@@ -85,7 +86,7 @@ def drawBoard(board, boardBack):
             pygame.draw.rect(screen, rectColor, square[0], 1)
  
             # If a square isn't empty draw the appropriate piece there
-            if square[1] is not "e" and square[1] is not "h":
+            if square[1] is "b" or square[1] is "w":
                 drawPiece(square)
 
 # Draw a piece of the appropriate color in the center of the given square
@@ -160,6 +161,83 @@ def drawText():
     for text in textList:
         screen.blit(text[0], text[1])
 
+def getValidSpaces(board):
+
+    validSpaces = []
+
+    for x in range(ROWS):
+        for y in range(COLS):
+            currentSpace = board[x][y]
+            if turn is "b":
+                oppositeColor = "w"
+            else:
+                oppositeColor = "b"
+            
+            # check space to the left
+            if x > 1 and currentSpace not in validSpaces:
+                if board[x - 1][y][1] is oppositeColor:
+                    for z in range(2,x):
+                        if board[x - z][y][1] is turn:
+                            validSpaces.append(currentSpace)
+                            break;
+
+            # Check spaces to the right
+            if x < 7 and currentSpace not in validSpaces:
+                if board[x + 1][y][1] is oppositeColor:
+                    for z in range(2, COLS - x):
+                        if board[x + z][y][1] is turn:
+                            validSpaces.append(currentSpace)
+                            break;
+            
+            # check spaces above
+            if y > 1 and currentSpace not in validSpaces:
+                if board[x][y - 1][1] is oppositeColor:
+                    for z in range(2,y):
+                        if board[x][y-z][1] is turn:
+                            validSpaces.append(currentSpace)
+                            break;
+
+            # check spaces below
+            if y < 7 and currentSpace not in validSpaces:
+                if board[x][y + 1][1] is oppositeColor:
+                    for z in range(2, ROWS - y):
+                        if board[x][y + z][1] is turn:
+                            validSpaces.append(currentSpace)
+                            break;
+
+            # check up and left
+            if x > 1 and y > 1 and currentSpace not in validSpaces:
+                if board[x - 1][y - 1][1] is oppositeColor:
+                    for zx, zy in zip(range(2,x), range(2,y)):
+                        if board[x - z][y - z][1] is turn:
+                            validSpaces.append(currentSpace);
+                            break;
+
+            # check down and right
+            if x < 7 and y < 7 and currentSpace not in validSpaces:
+                if board[x + 1][y + 1][1] is oppositeColor:
+                    for zx, zy in zip(range(2, COLS - x), range(ROWS - y)):
+                        if board[x + zx][y + zy][1] is turn:
+                            validSpaces.append(currentSpace);
+                            break;
+
+            # check down and left
+            if x > 1 and y < 7 and currentSpace not in validSpaces:
+                if board[x - 1][y + 1][1] is oppositeColor:
+                    for zx, zy in zip(range(2, x), range(2, ROWS - y)):
+                        if board[x - z][y + z][1] is turn:
+                            validSpaces.append(currentSpace);
+                            break;
+
+            # check up and right
+            if x < 7 and y > 1 and currentSpace not in validSpaces:
+                if board[x + 1][y - 1][1] is oppositeColor:
+                    for zx, zy in zip(range(2, COLS - x), range(2,y)):
+                        if board[x + z][y - z][1] is turn:
+                            validSpaces.append(currentSpace);
+                            break;
+
+    return validSpaces
 
 # Main       
 
@@ -175,7 +253,7 @@ else:
 # Create the main window
 screen = pygame.display.set_mode((RES_X, RES_Y))
 pygame.display.set_caption("Othello")
-done = False
+
 
 # Create the board
 board, boardBackground = createBoard()
@@ -184,8 +262,12 @@ board, boardBackground = createBoard()
 createText()
 
 # Main game loop
+done = False
 while not done:
     
+    # calculate valid spaces based off of the current board state
+    validSpaces = getValidSpaces(board)
+
     # Main events loop
     # If the x button on the window is clicked, end the game
     for event in pygame.event.get():
@@ -196,6 +278,7 @@ while not done:
         if event.type is pygame.MOUSEMOTION or event.type is pygame.MOUSEBUTTONUP:
             # Get the mouse's position
             pos = pygame.mouse.get_pos()
+            
             # For each square on the board
             for row in board:
                 for square in row:
@@ -209,10 +292,10 @@ while not done:
                                 square[1] = "w"
 
                             updateTurn()
-                        # If the mouse moved, highlight the square
-                        if event.type is pygame.MOUSEMOTION:
+                        # If the mouse moved, and if the space is valid, highlight the square
+                        if event.type is pygame.MOUSEMOTION and square in validSpaces:
                             square[1] = "h"
-                    # Un-highlight any square the mouse doesn't touch
+                    # Un-highlight any square the mouse doesn't touch or isn't valid
                     elif square[1] is "h":
                         square[1] = "e"
 
@@ -222,12 +305,17 @@ while not done:
     # Draw the board and pieces
     drawBoard(board, boardBackground)
 
+    # Draw text elements on the screen
     drawText()
     
     # Update the displaly
     pygame.display.flip()
 
-    # TODO: Features
-    # Player 1 and 2 Scores and turn tracking
-    # First four turns: Adding a the right color piece when the mouse is clicked, checking for invalid spaces
+
+    # TODO:
+    # Valid space: Space where you'll be able to flip at least one opposing disk after placement: check
+    # Forfeit key/message for when there aren't any valid moves
+    # Placed disk can flip all directions if valid. Hor, vert, diag
+    # Only flips opposing pieces between disks
+    # Can only flip disks in a direct line from the placed disk
 
