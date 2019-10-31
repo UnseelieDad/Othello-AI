@@ -126,6 +126,16 @@ def createText():
 
     textList.extend([(player1Text, player1TextRect), (player2Text, player2TextRect), (turnText, turnTextRect), (player1ScoreText, player1ScoreTextRect), (player2ScoreText, player2ScoreTextRect)])
 
+def setBotomText(text):
+
+    if textList[2]:
+        oldTurnText = textList.pop(2)
+
+    newTurnText = (FONT.render(text, True, GREEN), oldTurnText[1])
+
+    textList.insert(2, newTurnText)
+
+
 def updateTurn():
 
     global turn
@@ -149,6 +159,16 @@ def updateScore():
 
     #global textList    
     global textList
+
+    player1Score = 0
+    player2Score = 0
+
+    for row in board:
+        for square in row:
+            if square[1] is player1Color:
+                player1Score += 1
+            elif square[1] is player2Color:
+                player2Score += 1
 
     player1ScoreTextRect = textList[3][1]
     player2ScoreTextRect = textList[4][1]
@@ -343,7 +363,7 @@ def flipLines(square, validMoves, board):
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        flupPiece(board[zx][zy])
+                        flipPiece(board[zx][zy])
 
 def flipPiece(square):
 
@@ -352,8 +372,6 @@ def flipPiece(square):
             square[1] = "w"
         else:
             square[1] = "b"
-
-
     
 
 # Main       
@@ -378,6 +396,8 @@ board, boardBackground = createBoard()
 # Create text
 createText()
 
+noValidMovesCounter = 0
+
 # Main game loop
 done = False
 while not done:
@@ -385,11 +405,38 @@ while not done:
     # calculate valid spaces based off of the current board state
     validMoves = getValidSpaces(board)
 
+    
+
     # Main events loop
     # If the x button on the window is clicked, end the game
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type is pygame.QUIT:
             done = True
+
+        # if there are no valid moves on a player's turn the player must forefiet the turn
+        if len(validMoves) is 0:
+            noValidMovesCounter += 1
+            if noValidMovesCounter is 2:
+                # Game over function, need to grab final scores and throw it up at the end
+                if player1Score > player2Score:
+                    winText = "Player 1 Wins!"
+                else:
+                    winText = "Player 2 Wins!"
+                bottomText = "Game Over: "
+                setBotomText(bottomText+winText)
+            else:
+                bottomText = "No valid moves. Press the F key to forefiet the turn."
+                setBottomText(bottomText)
+                while True:
+                    if event.type is pygame.KEYDOWN:
+                        if event.key is pygame.K_f:
+                            updateTurn()
+                            break
+                    elif event.type is pygame.QUIT:
+                        done = True
+                        break
+        elif noValidMovesCounter > 0:
+            noValidMovesCounter = 0
 
         # If the mouse moves or is clicked
         if event.type is pygame.MOUSEMOTION or event.type is pygame.MOUSEBUTTONUP:
@@ -424,6 +471,9 @@ while not done:
                     elif square[1] is "h":
                         square[1] = "e"
 
+    # Update the score
+    updateScore()
+
     # Wipe the screen
     screen.fill(BLACK)
 
@@ -438,7 +488,7 @@ while not done:
 
 
     # TODO:
-    # Forfeit key/message for when there aren't any valid moves
+    # 
     # game over/win message
     # Scoring
 
