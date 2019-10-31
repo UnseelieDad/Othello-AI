@@ -286,63 +286,63 @@ def flipLines(square, validMoves, board):
 
             if direction is 1:
                 while True:
+                    zy -= 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zy -= 1
                         flipPiece(board[zx][zy])
             elif direction is 2:
                 while True:
+                    zy -= 1
+                    zx -= 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zy -= 1
-                        zx -= 1
                         flipPiece(board[zx][zy])
             elif direction is 3:
                 while True:
+                    zx -= 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zx -= 1
                         flipPiece(board[zx][zy])
             elif direction is 4:
                 while True:
+                    zx -= 1
+                    zy += 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zx -= 1
-                        zy += 1
                         flipPiece(board[zx][zy])
             elif direction is 5:
                 while True:
+                    zy += 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zy += 1
                         flipPiece(board[zx][zy])
             elif direction is 6:
                 while True:
+                    zx += 1
+                    zy += 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zx += 1
-                        zy += 1
                         flipPiece(board[zx][zy])
             elif direction is 7:
                 while True:
+                    zx += 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zx += 1
                         flipPiece(board[zx][zy])
             elif direction is 8:
                 while True:
+                    zx += 1
+                    zy -= 1
                     if board[zx][zy][1] is turn:
                         break
                     else:
-                        zx += 1
-                        zy -= 1
                         flupPiece(board[zx][zy])
 
 def flipPiece(square):
@@ -439,6 +439,6 @@ while not done:
 
     # TODO:
     # Forfeit key/message for when there aren't any valid moves
-    # flip multiple disks in a line
+    # game over/win message
     # Scoring
 
