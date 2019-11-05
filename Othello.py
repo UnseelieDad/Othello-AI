@@ -1,6 +1,7 @@
 '''Othello game program.'''
 
 import pygame
+import Node
 from random import randint
 
 pygame.init()
@@ -27,12 +28,134 @@ global player2Score
 global textList
 global player1Color
 global player2Color
+global compActive
+global compPlayer
 
 isStart = True
 turn = "b"
 player1Score = 0
 player2Score = 0
 textList = []
+compActive = True
+compPlayer = 2
+
+class Othello_AI:
+
+    # Requirements:
+    # Easily adjustable search depth
+    # Computer can play white or black
+    # Debug mode that prints out sequences of moves considered from current state with associated heuristic value
+    # Debug can be toggled on a move by move basis
+    # Debug mode that indicates when a branch is pruned and which branch is pruned
+    # Implements mini-max
+    # Implements alpha-beta pruning
+
+    def __init__(self, levelsDeep, board):
+        self.levelsDeep = levelsDeep
+        self.currentBoard = board
+        
+
+    def generateTree(self):
+
+        # source is the first node
+        source = Node(self.currentBoard)
+        #set current node to the first node
+        currentNode = source
+        # starting a level 0 of the tree
+        level = 0
+        # TODO: Implement maximizing or minimizing detection
+        levelType = "max"
+        # To break out of the loop once the appropriate square is found
+        spaceFound = False
+        # find the opposing color
+        if turn is "b":
+            oppositeColor = "w"
+        else:
+            oppositeColor = "b"
+
+        # While we haven't hit the bottom level
+        while level is not self.levelsDeep:
+            # Get valid moves from the board state stored in the current node
+            validMoves = getValidSpaces(currentNode.data)
+
+            # Create a child node for the board state that results from each valid move
+            for space in validMoves:
+                # create a new board starting as the current node's board state
+                newBoard = currentNode.data
+
+                for row in newBoard:
+                    if spaceFound is True:
+                        break
+
+                    for square in row:
+                        # if the square on the new board matches a valid move
+                        if space[0][0] is square[0]:
+                            # place a piece of the appropriate color and flip the flanked pieces to create a new board state
+                            if levelType is "max":
+                                square[1] = turn
+                            else:
+                                square[1] = oppositeColor
+
+                            flipLines(square, validMoves, newboard)
+                            spaceFound = True
+                            break
+                # Create a node with the new board state and add it to the current node's children
+                childState = Node(newBoard)
+                currentNode.addChild(childState)
+
+            if currentNode is source:
+                # If currentNode is the first node move to first child
+                currentNode = currentNode.children[0]
+            else:
+                # If current node is a child node move to its sibling
+                siblings = currentNode.getParent().children
+                currentIndex = siblings.indexOf(currentNode)
+                if len(siblings) > curentIndex:
+                    currentNode = siblings[currentIndex + 1]
+                else:
+                    #If the current node is the last sibling move to the first child of the first sibling 
+                    currentNode = siblings[0].child[0]
+           
+            # increase the level counter
+            level += 1
+        
+        # reset current node to the first node in the tree and return it
+        while currentNode is not source:
+            currentNode = currentNode.parent
+
+        return currentNode
+
+    def setCurrentBoardState(self, newBoardState):
+        self.currentBoardState = newBoardState
+
+    def getBoardData(self):
+        
+        # Calculate player coin parities
+        # Calculate player mobilities
+        # Calculate corners captured
+        # Calculate player stability
+
+        pass
+
+    def runHeuristics(self, node):
+        # Calculate coin parity
+        # Calculate Mobility
+        # Calculate number of corners captured
+        # Calculate stability
+
+        pass
+
+    def coinParityHeuristic(self):
+        pass
+
+    def mobilityHeuristic(self):
+        pass
+
+    def cornerHeuristic(self):
+        pass
+
+    def stabliityHeuristic(self):
+        pass
 
 
 # Initialize the the back of the game board and each individual square in an 8x8 grid.
@@ -396,6 +519,9 @@ board, boardBackground = createBoard()
 # Create text
 createText()
 
+if compActive is True:
+    comp = Othello_AI(3, board)
+
 noValidMovesCounter = 0
 
 # Main game loop
@@ -439,37 +565,42 @@ while not done:
             noValidMovesCounter = 0
 
         # If the mouse moves or is clicked
-        if event.type is pygame.MOUSEMOTION or event.type is pygame.MOUSEBUTTONUP:
-            # Get the mouse's position
-            pos = pygame.mouse.get_pos()
-            
-            # For each square on the board
-            for row in board:
-                for square in row:
-                    # If the mouse is over the square and the square is empty
-                    if square[0].collidepoint(pos) and square[1] is not "b" and square[1] is not "w":
-                        # if it was a click place a piece
-                        if event.type is pygame.MOUSEBUTTONUP and square[1] is "h":
-                            
-                            print validMoves
+        if compActive is False or compActive is True and turn is player1Color:
+            if event.type is pygame.MOUSEMOTION or event.type is pygame.MOUSEBUTTONUP:
+                # Get the mouse's position
+                pos = pygame.mouse.get_pos()
+                
+                # For each square on the board
+                for row in board:
+                    for square in row:
+                        # If the mouse is over the square and the square is empty
+                        if square[0].collidepoint(pos) and square[1] is not "b" and square[1] is not "w":
+                            # if it was a click place a piece
+                            if event.type is pygame.MOUSEBUTTONUP and square[1] is "h":
+                                
+                                print validMoves
 
-                            flipLines(square, validMoves, board)
-                            
-                            if turn is "b": 
-                                square[1] = "b"
-                            else:
-                                square[1] = "w"
-                            
-
-                            updateTurn()
-                        # If the mouse moved, and if the space is valid, highlight the square
-                        if event.type is pygame.MOUSEMOTION:
-                            for move in validMoves:
-                                if square is move[0]:
-                                    square[1] = "h"
-                    # Un-highlight any square the mouse doesn't touch or isn't valid
-                    elif square[1] is "h":
-                        square[1] = "e"
+                                flipLines(square, validMoves, board)
+                                
+                                square[1] = turn
+                                
+                                updateTurn()
+                            # If the mouse moved, and if the space is valid, highlight the square
+                            if event.type is pygame.MOUSEMOTION:
+                                for move in validMoves:
+                                    if square is move[0]:
+                                        square[1] = "h"
+                        # Un-highlight any square the mouse doesn't touch or isn't valid
+                        elif square[1] is "h":
+                            square[1] = "e"
+        
+        elif compActive is True and turn is player2Color:
+            # AI turn
+            # Generate new heuristic data
+            # Generate new tree
+            # Run algorithms
+            # Make the best move
+            pass
 
     # Update the score
     updateScore()
