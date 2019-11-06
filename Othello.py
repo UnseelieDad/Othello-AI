@@ -1,8 +1,10 @@
 '''Othello game program.'''
 
 import pygame
-import Node
+from Node import Node
 from random import randint
+from time import sleep
+from copy import deepcopy
 
 pygame.init()
 
@@ -53,80 +55,77 @@ class Othello_AI:
     def __init__(self, levelsDeep, board):
         self.levelsDeep = levelsDeep
         self.currentBoard = board
-        
 
-    def generateTree(self):
+    def generateChildren(self, node, maxLevel, currentLevel):
 
-        # source is the first node
-        source = Node(self.currentBoard)
-        #set current node to the first node
-        currentNode = source
-        # starting a level 0 of the tree
-        level = 0
-        # TODO: Implement maximizing or minimizing detection
-        levelType = "max"
-        # To break out of the loop once the appropriate square is found
+        global turn
+        startingNodeTurn = turn
         spaceFound = False
-        # find the opposing color
-        if turn is "b":
-            oppositeColor = "w"
-        else:
-            oppositeColor = "b"
+        sourceBoard = node.data
+        initialState = deepcopy(sourceBoard)
+       
+       # Get valid moves from the board state stored in the current node
+        validMoves = getValidSpaces(sourceBoard)
 
-        # While we haven't hit the bottom level
-        while level is not self.levelsDeep:
-            # Get valid moves from the board state stored in the current node
-            validMoves = getValidSpaces(currentNode.data)
+        # Create a child node for the board state that results from each valid move
+        for space in validMoves:
+            # create a new board starting as the current node's board state
 
-            # Create a child node for the board state that results from each valid move
-            for space in validMoves:
-                # create a new board starting as the current node's board state
-                newBoard = currentNode.data
+            for row in sourceBoard:
+                if spaceFound is True:
+                    break
 
-                for row in newBoard:
-                    if spaceFound is True:
+                for square in row:
+                    # if the square on the new board matches a valid move
+                    if space[0][0] is square[0]:
+                        # place a piece of the appropriate color and flip the flanked pieces to create a new board state
+                        square[1] = turn
+
+                        flipLines(square, validMoves, sourceBoard)
+                        spaceFound = True
                         break
 
-                    for square in row:
-                        # if the square on the new board matches a valid move
-                        if space[0][0] is square[0]:
-                            # place a piece of the appropriate color and flip the flanked pieces to create a new board state
-                            if levelType is "max":
-                                square[1] = turn
-                            else:
-                                square[1] = oppositeColor
+            # Create a node with the new board state and add it to the current node's children
+            newBoard = deepcopy(sourceBoard)
+            childState = Node(newBoard)
+            node.addChild(childState)
 
-                            flipLines(square, validMoves, newboard)
-                            spaceFound = True
-                            break
-                # Create a node with the new board state and add it to the current node's children
-                childState = Node(newBoard)
-                currentNode.addChild(childState)
+            # Reset source board
+            for x in range(ROWS):
+                for y in range(COLS):
+                    sourceBoard[x][y][1] = initialState[x][y][1]
 
-            if currentNode is source:
-                # If currentNode is the first node move to first child
-                currentNode = currentNode.children[0]
+            spaceFound = False
+
+        currentLevel += 1
+
+        if currentLevel is not maxLevel:
+
+            if turn is "b":
+                turn = "w"
             else:
-                # If current node is a child node move to its sibling
-                siblings = currentNode.getParent().children
-                currentIndex = siblings.indexOf(currentNode)
-                if len(siblings) > curentIndex:
-                    currentNode = siblings[currentIndex + 1]
-                else:
-                    #If the current node is the last sibling move to the first child of the first sibling 
-                    currentNode = siblings[0].child[0]
-           
-            # increase the level counter
-            level += 1
-        
-        # reset current node to the first node in the tree and return it
-        while currentNode is not source:
-            currentNode = currentNode.parent
+                turn = "b"
 
-        return currentNode
+            for child in node.children:
+                self.generateChildren(child, self.levelsDeep, currentLevel)
+
+        turn = startingNodeTurn
+
+    def generateTree(self):
+    
+        
+        # source is the first node
+        source = Node(self.currentBoard)
+
+        # starting a level 0 of the tree
+        level = 0
+
+        self.generateChildren(source, self.levelsDeep, level)
+
+        return source
 
     def setCurrentBoardState(self, newBoardState):
-        self.currentBoardState = newBoardState
+        self.currentBoard = newBoardState
 
     def getBoardData(self):
         
@@ -157,6 +156,14 @@ class Othello_AI:
     def stabliityHeuristic(self):
         pass
 
+    def printTree(self, node):
+
+        printBoard(node.data)
+        print
+
+        if node.children:
+            for child in node.children:
+                self.printTree(child)
 
 # Initialize the the back of the game board and each individual square in an 8x8 grid.
 def createBoard():
@@ -249,7 +256,7 @@ def createText():
 
     textList.extend([(player1Text, player1TextRect), (player2Text, player2TextRect), (turnText, turnTextRect), (player1ScoreText, player1ScoreTextRect), (player2ScoreText, player2ScoreTextRect)])
 
-def setBotomText(text):
+def setBottomText(text):
 
     if textList[2]:
         oldTurnText = textList.pop(2)
@@ -286,7 +293,7 @@ def updateScore():
     player1Score = 0
     player2Score = 0
 
-    for row in board:
+    for row in gameBoard:
         for square in row:
             if square[1] is player1Color:
                 player1Score += 1
@@ -419,10 +426,8 @@ def flipLines(square, validMoves, board):
             x = row
             y = rows.index(square)
 
-            print "{} {}".format(x,y)
 
     if square is board[x][y]:
-        print directions
         for direction in directions:
             zx = x
             zy = y
@@ -496,6 +501,19 @@ def flipPiece(square):
         else:
             square[1] = "b"
     
+def printBoard(board):
+
+    printRow = []
+
+    for row in board:
+        for space in row:
+            if space[1] is "e":
+                printRow.append(' ')
+            else:
+                printRow.append(space[1])
+        print(printRow)
+        printRow = []
+
 
 # Main       
 
@@ -514,13 +532,13 @@ pygame.display.set_caption("Othello")
 
 
 # Create the board
-board, boardBackground = createBoard()
+gameBoard, boardBackground = createBoard()
 
 # Create text
 createText()
 
 if compActive is True:
-    comp = Othello_AI(3, board)
+    comp = Othello_AI(3, deepcopy(gameBoard))
 
 noValidMovesCounter = 0
 
@@ -529,7 +547,7 @@ done = False
 while not done:
     
     # calculate valid spaces based off of the current board state
-    validMoves = getValidSpaces(board)
+    validMoves = getValidSpaces(gameBoard)
 
     
 
@@ -549,7 +567,7 @@ while not done:
                 else:
                     winText = "Player 2 Wins!"
                 bottomText = "Game Over: "
-                setBotomText(bottomText+winText)
+                setBottomText(bottomText+winText)
             else:
                 bottomText = "No valid moves. Press the F key to forefiet the turn."
                 setBottomText(bottomText)
@@ -571,7 +589,7 @@ while not done:
                 pos = pygame.mouse.get_pos()
                 
                 # For each square on the board
-                for row in board:
+                for row in gameBoard:
                     for square in row:
                         # If the mouse is over the square and the square is empty
                         if square[0].collidepoint(pos) and square[1] is not "b" and square[1] is not "w":
@@ -580,7 +598,7 @@ while not done:
                                 
                                 print validMoves
 
-                                flipLines(square, validMoves, board)
+                                flipLines(square, validMoves, gameBoard)
                                 
                                 square[1] = turn
                                 
@@ -598,9 +616,16 @@ while not done:
             # AI turn
             # Generate new heuristic data
             # Generate new tree
+            print "AI taking turn."
+            sleep(3)
+            print "Generating tree"
+            decisionTree = comp.generateTree()
+            print "Tree Generated"
             # Run algorithms
             # Make the best move
-            pass
+            updateTurn()
+
+    comp.setCurrentBoardState(gameBoard)
 
     # Update the score
     updateScore()
@@ -609,7 +634,7 @@ while not done:
     screen.fill(BLACK)
 
     # Draw the board and pieces
-    drawBoard(board, boardBackground)
+    drawBoard(gameBoard, boardBackground)
 
     # Draw text elements on the screen
     drawText()
