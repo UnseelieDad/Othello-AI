@@ -41,259 +41,6 @@ textList = []
 compActive = True
 compPlayer = 2
 
-class Othello_AI:
-
-    # Requirements:
-    # Easily adjustable search depth
-    # Computer can play white or black
-    # Debug mode that prints out sequences of moves considered from current state with associated heuristic value
-    # Debug can be toggled on a move by move basis
-    # Debug mode that indicates when a branch is pruned and which branch is pruned
-    # Implements mini-max
-    # Implements alpha-beta pruning
-
-    def __init__(self, levelsDeep, board):
-        self.levelsDeep = levelsDeep
-        self.currentBoard = board
-
-    def generateChildren(self, node, maxLevel, currentLevel):
-
-        global turn
-        startingNodeTurn = turn
-        spaceFound = False
-        sourceBoard = node.data
-        initialState = deepcopy(sourceBoard)
-       
-       # Get valid moves from the board state stored in the current node
-        validMoves = getValidSpaces(sourceBoard)
-
-        # Create a child node for the board state that results from each valid move
-        for space in validMoves:
-            # create a new board starting as the current node's board state
-
-            for row in sourceBoard:
-                if spaceFound is True:
-                    break
-
-                for square in row:
-                    # if the square on the new board matches a valid move
-                    if space[0][0] is square[0]:
-                        # place a piece of the appropriate color and flip the flanked pieces to create a new board state
-                        square[1] = turn
-
-                        flipLines(square, validMoves, sourceBoard)
-                        spaceFound = True
-                        break
-
-            # Create a node with the new board state and add it to the current node's children
-            newBoard = deepcopy(sourceBoard)
-            childState = Node(newBoard)
-            node.addChild(childState)
-
-            # Reset source board
-            for x in range(ROWS):
-                for y in range(COLS):
-                    sourceBoard[x][y][1] = initialState[x][y][1]
-
-            spaceFound = False
-
-        currentLevel += 1
-
-        if currentLevel is not maxLevel:
-
-            if turn is "b":
-                turn = "w"
-            else:
-                turn = "b"
-
-            for child in node.children:
-                self.generateChildren(child, self.levelsDeep, currentLevel)
-        
-        elif currentLevel is maxLevel:
-            childHeuristics = []
-            for child in node.children:
-                # run heuristic function on theb board state
-                #set child's heuristic
-                pass
-
-        for child in node.children:
-            if currentLevel % 2 is 0:
-                # maximizing level
-                # set this node's heuristic to the highest
-                pass
-            else:
-                # minimizing level
-                # set this node's heuristic to the lowest
-                pass
-
-        turn = startingNodeTurn
-
-
-
-    def generateTree(self):
-    
-        
-        # source is the first node
-        source = Node(self.currentBoard)
-
-        # starting a level 0 of the tree
-        level = 0
-
-        self.generateChildren(source, self.levelsDeep, level)
-
-        return source
-
-    def setCurrentBoardState(self, newBoardState):
-        self.currentBoard = newBoardState
-
-    def getBoardData(self):
-        
-        # Calculate player coin parities
-        # Calculate player mobilities
-        # Calculate corners captured
-        # Calculate player stability
-
-        pass
-
-    def runHeuristics(self, node):
-        # Calculate coin parity
-        # Calculate Mobility
-        # Calculate number of corners captured
-        # Calculate stability
-
-        pass
-
-    def coinParityHeuristic(self, board):
-        p1Score = 0
-        p2Score = 0
-
-        for row in board:
-            for space in row:
-                if space[1] is player1Color:
-                    p1Score += 1
-                elif space[1] is player2Color:
-                    p2Score += 1
-        
-        heuristic = 100 * (p2Score - p1Score) / (p2Score + p1Score)
-
-        return heuristic
-        
-
-    def mobilityHeuristic(self, board):
-        
-        global turn
-        originalTurn = turn
-
-        turn = player2Color
-        moves = getValidSpaces(board)
-        player2Mobility = len(moves)
-
-        turn = player1Color
-        moves = getValidSpaces(board)
-        player1Mobility = len(moves)
-
-        if player2Mobility + player1Mobility is not 0:
-            heuristic = 100 * (player2Mobility - player1Mobility) / (player2Mobility + player1Mobility)
-        else:
-            heuristic = 0
-        
-        return heuristic
-
-
-    def cornerHeuristic(self, board):
-        
-        player1Corners = 0
-        player2Corners = 0
-        
-        if board[0][0][1] is player1Color:
-            player1Corners += 1
-        elif board[0][0][1] is player2Color:
-            player2Color += 1
-
-        if board[0][8][1] is player1Color:
-            player1Corners += 1
-        elif board[0][8][1] is player2Color:
-            player2Color += 1
-
-        if board[8][0][1] is player1Color:
-            player1Corners += 1
-        elif board[8][0][1] is player2Color:
-            player2Color += 1
-
-        if board[8][8][1] is player1Color:
-            player1Corners += 1
-        elif board[8][8][1] is player2Color:
-            player2Color += 1
-
-        if player2Corners + player1Corners is not 0:
-            heuristic = 100 * (player2Corners - player1Corners) / (player2Corners + player1Corners)
-        else:
-            heuristic = 0
-
-        return heuristic
-
-    def stabliityHeuristic(self, board):
-        
-        stableSpaces = []
-        unstableSpaces = []
-        semiStableSpaces = []
-
-        
-        
-        for x in range(ROWS):
-            for y in range(COLS):
-
-                stableHor = False
-                stableVert = False
-                stableDiagFor = False
-                stableDiagBack = False
-
-                if board[x][y][1] is not "e" and board[x][y][1] is not "h":
-                    # check left and right
-                    stableHor = True
-                    # Piece is stable horizontally if the row is full
-                    for zy in range(0,y):
-                        if board[x][zy][1] is "e":
-                            stableHor = False
-                    if stableHor is not False:
-                        for zy in range(y,8):
-                            if board[x][zy][1] is "e":
-                                stableHor = False
-                    # if row isn't full, piece is stable horizontally if it's next to an edge or another stable piece
-                    if stableHor is False:
-                        if y is 0 or y is 8:
-                            stableHor = True
-                        elif board[x][y - 1] in stableSpaces or board[x][y + 1] in stableSpaces:
-                            stableHor = True
-                    
-                    # check vertically
-                    stableVert = True
-                    for zx in range(0,x):
-                        if board[zx][y][1] is "e":
-                            stableVert = False
-                    if stableVert is not False:
-                        for zx in range(x,8):
-                            if board[zx][y][1] is "e":
-                                stableVert = False
-                    # if column isn't full, piece is stable vertically if it's next to an edge or another stable piece
-                    if stableVert is False:
-                        if x is 0 or x is 8:
-                            stableVert = True
-                        elif board[x - 1][y] in stableSpaces or board[x + 1][y] in stableSpaces:
-                            stableVert = True
-                    # check diagonals
-
-                    
-
-    def printTree(self, node):
-
-        printBoard(node.data)
-        print
-
-        if node.children:
-            for child in node.children:
-                self.printTree(child)
-
 # Initialize the the back of the game board and each individual square in an 8x8 grid.
 def createBoard():
 
@@ -394,7 +141,6 @@ def setBottomText(text):
 
     textList.insert(2, newTurnText)
 
-
 def updateTurn():
 
     global turn
@@ -443,7 +189,7 @@ def updateScore():
 
     textList.extend([(player1ScoreText, player1ScoreTextRect), (player2ScoreText, player2ScoreTextRect)])
 
-def drawText():
+def drawText(screen):
 
     for text in textList:
         screen.blit(text[0], text[1])
@@ -644,6 +390,354 @@ def printBoard(board):
         printRow = []
 
 
+class Othello_AI:
+
+    # Requirements:
+    # Easily adjustable search depth
+    # Computer can play white or black
+    # Debug mode that prints out sequences of moves considered from current state with associated heuristic value
+    # Debug can be toggled on a move by move basis
+    # Debug mode that indicates when a branch is pruned and which branch is pruned
+    # Implements mini-max
+    # Implements alpha-beta pruning
+
+    def __init__(self, levelsDeep, board):
+        self.levelsDeep = levelsDeep
+        self.currentBoard = board
+
+    def generateChildren(self, node, maxLevel, currentLevel):
+
+        global turn
+        startingNodeTurn = turn
+        spaceFound = False
+        sourceBoard = node.data
+        initialState = deepcopy(sourceBoard)
+       
+       # Get valid moves from the board state stored in the current node
+        validMoves = getValidSpaces(sourceBoard)
+
+        # Create a child node for the board state that results from each valid move
+        for space in validMoves:
+            # create a new board starting as the current node's board state
+
+            for row in sourceBoard:
+                if spaceFound is True:
+                    break
+
+                for square in row:
+                    # if the square on the new board matches a valid move
+                    if space[0][0] is square[0]:
+                        # place a piece of the appropriate color and flip the flanked pieces to create a new board state
+                        square[1] = turn
+
+                        flipLines(square, validMoves, sourceBoard)
+                        spaceFound = True
+                        break
+
+            # Create a node with the new board state and add it to the current node's children
+            newBoard = deepcopy(sourceBoard)
+            childState = Node(newBoard)
+            node.addChild(childState)
+
+            # Reset source board
+            for x in range(ROWS):
+                for y in range(COLS):
+                    sourceBoard[x][y][1] = initialState[x][y][1]
+
+            spaceFound = False
+
+        currentLevel += 1
+
+        if currentLevel is not maxLevel:
+
+            if turn is "b":
+                turn = "w"
+            else:
+                turn = "b"
+
+            for child in node.children:
+                self.generateChildren(child, self.levelsDeep, currentLevel)
+        
+        elif currentLevel is maxLevel:
+            childHeuristics = []
+            for child in node.children:
+                # run heuristic function on theb board state
+                #set child's heuristic
+                pass
+
+        for child in node.children:
+            if currentLevel % 2 is 0:
+                # maximizing level
+                # set this node's heuristic to the highest
+                pass
+            else:
+                # minimizing level
+                # set this node's heuristic to the lowest
+                pass
+
+        turn = startingNodeTurn
+
+    def generateTree(self):
+    
+        
+        # source is the first node
+        source = Node(self.currentBoard)
+
+        # starting a level 0 of the tree
+        level = 0
+
+        self.generateChildren(source, self.levelsDeep, level)
+
+        return source
+
+    def setCurrentBoardState(self, newBoardState):
+        self.currentBoard = newBoardState
+
+    def runHeuristics(self, node):
+        # Calculate coin parity
+        # Calculate Mobility
+        # Calculate number of corners captured
+        # Calculate stability
+
+        pass
+
+    def coinParityHeuristic(self, board):
+        p1Score = 0
+        p2Score = 0
+
+        for row in board:
+            for space in row:
+                if space[1] is player1Color:
+                    p1Score += 1
+                elif space[1] is player2Color:
+                    p2Score += 1
+        
+        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
+        if self.levelsDeep % 2 is 0:
+            maxPlayerScore = p2Score
+            minPlayerScore = p1Score
+        else:
+            maxPlayerScore = p1Score
+            minPlayerScore = p2Score
+        
+        heuristic = 100 * (maxPlayerScore - minPlayerScore) / (maxPlayerScore + minPlayerScore)
+
+        return heuristic
+        
+    def mobilityHeuristic(self, board):
+        
+        global turn
+        originalTurn = turn
+
+        turn = player2Color
+        moves = getValidSpaces(board)
+        player2Mobility = len(moves)
+
+        turn = player1Color
+        moves = getValidSpaces(board)
+        player1Mobility = len(moves)
+
+        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
+        if self.levelsDeep % 2 is 0:
+            maxPlayerMobility = player2Mobility
+            minPlayerMobility = player1Mobility
+        else:
+            maxPlayerMobility = player1Mobility
+            minPlayerMobility = player2Mobility
+
+        if player2Mobility + player1Mobility is not 0:
+            heuristic = 100 * (maxPlayerMobility - minPlayerMobility) / (maxPlayerMobility + minPlayerMobility)
+        else:
+            heuristic = 0
+        
+        return heuristic
+
+    def cornerHeuristic(self, board):
+        
+        player1Corners = 0
+        player2Corners = 0
+        
+        if board[0][0][1] is player1Color:
+            player1Corners += 1
+        elif board[0][0][1] is player2Color:
+            player2Color += 1
+
+        if board[0][8][1] is player1Color:
+            player1Corners += 1
+        elif board[0][8][1] is player2Color:
+            player2Color += 1
+
+        if board[8][0][1] is player1Color:
+            player1Corners += 1
+        elif board[8][0][1] is player2Color:
+            player2Color += 1
+
+        if board[8][8][1] is player1Color:
+            player1Corners += 1
+        elif board[8][8][1] is player2Color:
+            player2Color += 1
+
+        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
+        if self.levelsDeep % 2 is 0:
+            maxPlayerCorner = player2Corners
+            minPlayerCorner = player1Corners
+        else:
+            maxPlayerCorner = player1Corners
+            minPlayerCorner = player2Corners
+        
+        if player2Corners + player1Corners is not 0:
+            heuristic = 100 * (maxPlayerCorner - minPlayerCorner) / (maxPlayerCorner + minPlayerCorner)
+        else:
+            heuristic = 0
+
+        return heuristic
+
+    def stabliityHeuristic(self, board):
+        
+        stableSpaces = []
+        unstableSpaces = []
+
+        player1Stability = 0
+        player2Stability = 0
+        
+        for x in range(ROWS):
+            for y in range(COLS):
+
+                if board[x][y][1] is not "e" and board[x][y][1] is not "h":
+                    if checkStable(board, stableSpaces, x, y):
+                        stableSpaces.append(board[x][y])
+                        break
+                    elif checkUnstable(board, x, y):
+                        unstableSpaces.append(board[x][y])
+        
+        for space in stableSpaces:
+            if space[1] is player1Color:
+                player1Stability += 1
+            elif space[1] is player2Color:
+                player2Stability += 1
+
+        for space in unstableSpaces:
+            if space[1] is player1Color:
+                player1Stability -= 1
+            elif space[1] is player2Color:
+                player2Stability -= 1
+
+        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
+        if self.levelsDeep % 2 is 0:
+            maxPlayerStability = player2Stability
+            minPlayerStability = player1Stability
+        else:
+            maxPlayerStability = player1Stability
+            minPlayerStability = player2Stability
+
+        if player2Stability + player1Stability is not 0:
+            heuristic = 100 * (maxPlayerStability - minPlayerStability) / (maxPlayerStability + minPlayerStability)
+        else:
+            heuristic = 0
+
+        return heuristic
+                    
+    def checkUnstable(self, board, x, y):
+        # If piece can be taken in the next move it is unstable
+        global turn
+        originalTurn = turn
+        if board[x][y][1] is "b":
+            turn = "w"
+        else:
+            turn = "b"
+
+        moves = getValidSpaces(board)
+
+        adjacentSpaces = [board[x+1][y], board[x-1][y], board[x][y+1], board[x][y-1], board[x-1][y-1], board[x+1][y+1], board[x-1][y+1], board[x+1][y-1]]
+
+        for space in moves:
+            if space[0][0] in adjacentSpaces:
+                turn = originalTurn
+                return True
+
+        turn = originalTurn
+        return False
+    
+    def checkStable(self, board, stableSpaces, x, y):
+
+        # check left and right
+        stableHor = True
+        # Piece is stable horizontally if the row is full
+        for zy in range(0,y):
+            if board[x][zy][1] is "e":
+                stableHor = False
+        if stableHor is not False:
+            for zy in range(y,8):
+                if board[x][zy][1] is "e":
+                    stableHor = False
+        # if row isn't full, piece is stable horizontally if it's next to an edge or another stable piece
+        if stableHor is False:
+            if y is 0 or y is 7:
+                stableHor = True
+            elif board[x][y - 1] in stableSpaces or board[x][y + 1] in stableSpaces:
+                stableHor = True
+        
+        # check vertically
+        stableVert = True
+        for zx in range(0,x):
+            if board[zx][y][1] is "e":
+                stableVert = False
+        if stableVert is not False:
+            for zx in range(x,8):
+                if board[zx][y][1] is "e":
+                    stableVert = False
+        # if column isn't full, piece is stable vertically if it's next to an edge or another stable piece
+        if stableVert is False:
+            if x is 0 or x is 7:
+                stableVert = True
+            elif board[x - 1][y] in stableSpaces or board[x + 1][y] in stableSpaces:
+                stableVert = True
+        
+        # check diagonals
+        stableDiagBack = True
+        for zx, zy in zip(range(0,x), range(0,y)):
+            if board[zx][zy][1] is "e":
+                stableDiagBack = False
+        if stableDiagBack is False:
+            for zx, zy in zip(range(x,8), range(y,8)):
+                if board[zx][zy][1] is "e":
+                    stableDiagBack = False
+        if stableDiagBack is False:
+            if x is 0 and y is 0 or x is 7 and y is 7:
+                stableDiagBack = True
+            elif board[x - 1][y - 1] in stableSpaces or board[x + 1][y + 1] in stableSpaces:
+                stableDiagBack = True
+        
+        stableDiagFront = True
+        for zx, zy in zip(range(0,x), range(y,8)):
+            if board[zx][zy][1] is "e":
+                stableDiagFront = False
+        if stableDiagFront is False:
+            for zx, zy in zip(range(x,8), range(0,y)):
+                if board[zx][zy][1] is "e":
+                    stableDiagFront = False
+        if stableDiagFront is False:
+            if x is 0 and y is 0 or x is 7 and y is 7:
+                stableDiagFront = True
+            elif board[x + 1][y - 1] in stableSpaces or board[x + 1][y - 1] in stableSpaces:
+                stableDiagFront = True
+
+        if stableHor and stableVert and stableDiagBack and stableDiagFront:
+            return True
+        else:
+            return False
+
+    def printTree(self, node):
+
+        printBoard(node.data)
+        print
+
+        if node.children:
+            for child in node.children:
+                self.printTree(child)
+
+
+
 # Main       
 
 # See who's going first
@@ -765,7 +859,7 @@ while not done:
     drawBoard(gameBoard, boardBackground)
 
     # Draw text elements on the screen
-    drawText()
+    drawText(screen)
     
     # Update the displaly
     pygame.display.flip()
