@@ -108,8 +108,27 @@ class Othello_AI:
 
             for child in node.children:
                 self.generateChildren(child, self.levelsDeep, currentLevel)
+        
+        elif currentLevel is maxLevel:
+            childHeuristics = []
+            for child in node.children:
+                # run heuristic function on theb board state
+                #set child's heuristic
+                pass
+
+        for child in node.children:
+            if currentLevel % 2 is 0:
+                # maximizing level
+                # set this node's heuristic to the highest
+                pass
+            else:
+                # minimizing level
+                # set this node's heuristic to the lowest
+                pass
 
         turn = startingNodeTurn
+
+
 
     def generateTree(self):
     
@@ -144,17 +163,127 @@ class Othello_AI:
 
         pass
 
-    def coinParityHeuristic(self):
-        pass
+    def coinParityHeuristic(self, board):
+        p1Score = 0
+        p2Score = 0
 
-    def mobilityHeuristic(self):
-        pass
+        for row in board:
+            for space in row:
+                if space[1] is player1Color:
+                    p1Score += 1
+                elif space[1] is player2Color:
+                    p2Score += 1
+        
+        heuristic = 100 * (p2Score - p1Score) / (p2Score + p1Score)
 
-    def cornerHeuristic(self):
-        pass
+        return heuristic
+        
 
-    def stabliityHeuristic(self):
-        pass
+    def mobilityHeuristic(self, board):
+        
+        global turn
+        originalTurn = turn
+
+        turn = player2Color
+        moves = getValidSpaces(board)
+        player2Mobility = len(moves)
+
+        turn = player1Color
+        moves = getValidSpaces(board)
+        player1Mobility = len(moves)
+
+        if player2Mobility + player1Mobility is not 0:
+            heuristic = 100 * (player2Mobility - player1Mobility) / (player2Mobility + player1Mobility)
+        else:
+            heuristic = 0
+        
+        return heuristic
+
+
+    def cornerHeuristic(self, board):
+        
+        player1Corners = 0
+        player2Corners = 0
+        
+        if board[0][0][1] is player1Color:
+            player1Corners += 1
+        elif board[0][0][1] is player2Color:
+            player2Color += 1
+
+        if board[0][8][1] is player1Color:
+            player1Corners += 1
+        elif board[0][8][1] is player2Color:
+            player2Color += 1
+
+        if board[8][0][1] is player1Color:
+            player1Corners += 1
+        elif board[8][0][1] is player2Color:
+            player2Color += 1
+
+        if board[8][8][1] is player1Color:
+            player1Corners += 1
+        elif board[8][8][1] is player2Color:
+            player2Color += 1
+
+        if player2Corners + player1Corners is not 0:
+            heuristic = 100 * (player2Corners - player1Corners) / (player2Corners + player1Corners)
+        else:
+            heuristic = 0
+
+        return heuristic
+
+    def stabliityHeuristic(self, board):
+        
+        stableSpaces = []
+        unstableSpaces = []
+        semiStableSpaces = []
+
+        
+        
+        for x in range(ROWS):
+            for y in range(COLS):
+
+                stableHor = False
+                stableVert = False
+                stableDiagFor = False
+                stableDiagBack = False
+
+                if board[x][y][1] is not "e" and board[x][y][1] is not "h":
+                    # check left and right
+                    stableHor = True
+                    # Piece is stable horizontally if the row is full
+                    for zy in range(0,y):
+                        if board[x][zy][1] is "e":
+                            stableHor = False
+                    if stableHor is not False:
+                        for zy in range(y,8):
+                            if board[x][zy][1] is "e":
+                                stableHor = False
+                    # if row isn't full, piece is stable horizontally if it's next to an edge or another stable piece
+                    if stableHor is False:
+                        if y is 0 or y is 8:
+                            stableHor = True
+                        elif board[x][y - 1] in stableSpaces or board[x][y + 1] in stableSpaces:
+                            stableHor = True
+                    
+                    # check vertically
+                    stableVert = True
+                    for zx in range(0,x):
+                        if board[zx][y][1] is "e":
+                            stableVert = False
+                    if stableVert is not False:
+                        for zx in range(x,8):
+                            if board[zx][y][1] is "e":
+                                stableVert = False
+                    # if column isn't full, piece is stable vertically if it's next to an edge or another stable piece
+                    if stableVert is False:
+                        if x is 0 or x is 8:
+                            stableVert = True
+                        elif board[x - 1][y] in stableSpaces or board[x + 1][y] in stableSpaces:
+                            stableVert = True
+                    # check diagonals
+
+                    
 
     def printTree(self, node):
 
@@ -614,7 +743,6 @@ while not done:
         
         elif compActive is True and turn is player2Color:
             # AI turn
-            # Generate new heuristic data
             # Generate new tree
             print "AI taking turn."
             sleep(3)
