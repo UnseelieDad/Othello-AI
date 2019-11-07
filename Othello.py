@@ -477,7 +477,10 @@ class Othello_AI:
                 turn = "b"
 
             for child in node.children:
+                child.alpha = node.alpha
                 self.generateChildren(child, self.levelsDeep, currentLevel)
+                if child.alpha > node.alpha:
+                    node.alpha = child.alpha
         
         elif currentLevel is maxLevel:
             childHeuristics = []
@@ -485,15 +488,21 @@ class Othello_AI:
                 # run heuristic function on theb board state
                 self.runHeuristics(child)
                 childHeuristics.append(child.heuristic)
-
+                # TODO: Fix this dumb loop, shouldn't calculate alpha until all heuristics are done.
                 for heuristic in childHeuristics:
-                    if heuristic < node.alpha:
-                        break
+                    if currentLevel % 2 is 0:
+                        if heuristic < node.alpha:
+                            print "Pruned alpha"
+                            break
+                        else:
+                            node.alpha = min(childHeuristics)
                     else:
-                        node.alpha = min(childHeuristics)
-                        # Pass alpha back up to parents
-
-
+                        if heuristic > node.alpha:
+                            print "Pruned beta"
+                            break
+                        else:
+                            node.beta = max(childHeuristics)
+                    
         currentHeuristic = 0
         for child in node.children:
             if currentLevel % 2 is 0:
