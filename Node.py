@@ -5,6 +5,8 @@ class Node:
         self.heuristic = None
         self.children = []
         self.parent = None
+        self.alpha = None
+        self.beta = None
 
     def addChild(self, node):
         node.parent = self

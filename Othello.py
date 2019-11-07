@@ -31,7 +31,6 @@ global textList
 global player1Color
 global player2Color
 global compActive
-global compPlayer
 
 isStart = True
 turn = "b"
@@ -458,6 +457,8 @@ class Othello_AI:
             newBoard = deepcopy(sourceBoard)
             childState = Node(newBoard)
             node.addChild(childState)
+            childState.alpha = childState.parent.alpha
+            childState.beta = childState.parent.beta
 
             # Reset source board
             for x in range(ROWS):
@@ -483,6 +484,15 @@ class Othello_AI:
             for child in node.children:
                 # run heuristic function on theb board state
                 self.runHeuristics(child)
+                childHeuristics.append(child.heuristic)
+
+                for heuristic in childHeuristics:
+                    if heuristic < node.alpha:
+                        break
+                    else:
+                        node.alpha = min(childHeuristics)
+                        # Pass alpha back up to parents
+
 
         currentHeuristic = 0
         for child in node.children:
@@ -498,9 +508,8 @@ class Othello_AI:
                     currentHeuristic = child.heuristic
         
         nextMove = None
-        if node.parent:
-            node.heuristic = currentHeuristic
-        else:
+        node.heuristic = currentHeuristic
+        if node.parent is None:
             for child in node.children:
                 if currentHeuristic is child.heuristic:
                     nextMove = child.data
@@ -514,6 +523,9 @@ class Othello_AI:
         
         # source is the first node
         source = Node(self.currentBoard)
+        source.alpha = float("-inf")
+        source.beta = float("inf")
+
 
         # starting a level 0 of the tree
         level = 0
