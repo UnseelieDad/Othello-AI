@@ -37,9 +37,10 @@ isStart = True
 turn = "b"
 player1Score = 0
 player2Score = 0
+player1Color = ""
+player2Color = ""
 textList = []
 compActive = True
-compPlayer = 2
 
 # Initialize the the back of the game board and each individual square in an 8x8 grid.
 def createBoard():
@@ -132,7 +133,7 @@ def createText():
 
     textList.extend([(player1Text, player1TextRect), (player2Text, player2TextRect), (turnText, turnTextRect), (player1ScoreText, player1ScoreTextRect), (player2ScoreText, player2ScoreTextRect)])
 
-def setBottomText(text):
+def setBottomText(text, screen):
 
     if textList[2]:
         oldTurnText = textList.pop(2)
@@ -140,6 +141,9 @@ def setBottomText(text):
     newTurnText = (FONT.render(text, True, GREEN), oldTurnText[1])
 
     textList.insert(2, newTurnText)
+    drawText(screen)
+    pygame.display.flip()
+
 
 def updateTurn():
 
@@ -206,83 +210,100 @@ def getValidSpaces(board):
 
     for x in range(ROWS):
         for y in range(COLS):
-            currentSpace = board[x][y]
-            if turn is "b":
-                oppositeColor = "w"
-            else:
-                oppositeColor = "b"
-            
-            # check space to the left
-            if y > 1:
-                if board[x][y-1][1] is oppositeColor:
-                    for z in range(2,x):
-                        if board[x][y-z][1] is turn:
-                            #print "left"
-                            flankDirections.append(1)
-                            break
+            if board[x][y][1] is "e" or board[x][y] is "h":
+                currentSpace = board[x][y]
+                if turn is "b":
+                    oppositeColor = "w"
+                else:
+                    oppositeColor = "b"
+                
+                # check space to the left
+                if y > 1:
+                    if board[x][y-1][1] is oppositeColor:
+                        for z in range(2,y):
+                            if board[x][y-z][1] is not "b" and board[x][y-z][1] is not "w":
+                                break
+                            elif board[x][y-z][1] is turn:
+                                #print "left"
+                                flankDirections.append(1)
+                                break
 
-            # Check spaces to the right
-            if y < 7:
-                if board[x][y + 1][1] is oppositeColor:
-                    for z in range(2, COLS - y):
-                        if board[x][y+z][1] is turn:
-                            #print "right"
-                            flankDirections.append(5)
-                            break
-            
-            # check spaces above
-            if x > 1:
-                if board[x-1][y][1] is oppositeColor:
-                    for z in range(2,y):
-                        if board[x-z][y][1] is turn:
-                            #print "up"
-                            flankDirections.append(3)
-                            break
+                # Check spaces to the right
+                if y < 7:
+                    if board[x][y + 1][1] is oppositeColor:
+                        for z in range(2, COLS - y):
+                            if board[x][y+z][1] is not "b" and board[x][y+z][1] is not "w":
+                                break
+                            elif board[x][y+z][1] is turn:
+                                #print "right"
+                                flankDirections.append(5)
+                                break
+                
+                # check spaces above
+                if x > 1:
+                    if board[x-1][y][1] is oppositeColor:
+                        for z in range(2,x):
+                            if board[x-z][y][1] is not "b" and board[x-z][y][1] is not "w":
+                                break
+                            elif board[x-z][y][1] is turn:
+                                #print "up"
+                                flankDirections.append(3)
+                                break
 
-            # check spaces below
-            if x < 7:
-                if board[x+1][y][1] is oppositeColor:
-                    for z in range(2, ROWS - x):
-                        if board[x+z][y][1] is turn:
-                            #print "down"
-                            flankDirections.append(7)
-                            break
+                # check spaces below
+                if x < 7:
+                    if board[x+1][y][1] is oppositeColor:
+                        for z in range(2, ROWS - x):
+                            if board[x+z][y][1] is not "b" and board[x+z][y][1] is not "w":
+                                break
+                            elif board[x+z][y][1] is turn:
+                                #print "down"
+                                flankDirections.append(7)
+                                break
 
-            # check up and left
-            if x > 1 and y > 1:
-                if board[x - 1][y - 1][1] is oppositeColor:
-                    for zx, zy in zip(range(2,x), range(2,y)):
-                        if board[x - zx][y - zy][1] is turn:
-                            flankDirections.append(2)
-                            break
+                # check up and left
+                if x > 1 and y > 1:
+                    if board[x - 1][y - 1][1] is oppositeColor:
+                        for zx, zy in zip(range(2,x), range(2,y)):
+                            if board[x - zx][y - zy][1] is not "b" and board[x - zx][y - zy][1] is not "w":
+                                break
+                            elif board[x - zx][y - zy][1] is turn:
+                                flankDirections.append(2)
+                                break
 
-            # check down and right
-            if x < 7 and y < 7:
-                if board[x + 1][y + 1][1] is oppositeColor:
-                    for zx, zy in zip(range(2, ROWS - x), range(2, COLS - y)):
-                        if board[x + zx][y + zy][1] is turn:
-                            flankDirections.append(6)
-                            break
+                # check down and right
+                if x < 7 and y < 7:
+                    if board[x + 1][y + 1][1] is oppositeColor:
+                        for zx, zy in zip(range(2, ROWS - x), range(2, COLS - y)):
+                            if board[x + zx][y + zy][1] is not "b" and board[x + zx][y + zy][1] is not "w":
+                                break
+                            elif board[x + zx][y + zy][1] is turn:
+                                flankDirections.append(6)
+                                break
 
-            # check down and left
-            if x < 7 and y > 1:
-                if board[x+1][y-1][1] is oppositeColor:
-                    for zx, zy in zip(range(2, ROWS - x), range(2, y)):
-                        if board[x+zx][y-zy][1] is turn:
-                            flankDirections.append(8)
-                            break
+                # check down and left
+                if x < 7 and y > 1:
+                    if board[x+1][y-1][1] is oppositeColor:
+                        for zx, zy in zip(range(2, ROWS - x), range(2, y)):
+                            if board[x+zx][y-zy][1] is not "b" and board[x+zx][y-zy][1] is not "w":
+                                break
+                            elif board[x+zx][y-zy][1] is turn:
+                                flankDirections.append(8)
+                                break
 
-            # check up and right
-            if x > 1 and y < 7:
-                if board[x - 1][y + 1][1] is oppositeColor:
-                    for zx, zy in zip(range(2, x), range(2, COLS - y)):
-                        if board[x - zx][y + zy][1] is turn:
-                            flankDirections.append(4)
-                            break
-            
-            if len(flankDirections) is not 0:
-                validSpaces.append((currentSpace, flankDirections))
-            flankDirections = []
+                # check up and right
+                if x > 1 and y < 7:
+                    if board[x - 1][y + 1][1] is oppositeColor:
+                        for zx, zy in zip(range(2, x), range(2, COLS - y)):
+                            if board[x - zx][y + zy][1] is not "b" and board[x - zx][y + zy][1] is not "w":
+                                break
+                            if board[x - zx][y + zy][1] is turn:
+                                flankDirections.append(4)
+                                break
+                
+                if len(flankDirections) is not 0:
+                    validSpaces.append((currentSpace, flankDirections))
+                flankDirections = []
 
     return validSpaces
 
@@ -290,6 +311,8 @@ def flipLines(square, validMoves, board):
     
     x = 0
     y = 0
+
+    directions = []
 
     for move in validMoves:
         if square is move[0]:
@@ -393,12 +416,9 @@ def printBoard(board):
 class Othello_AI:
 
     # Requirements:
-    # Easily adjustable search depth
-    # Computer can play white or black
     # Debug mode that prints out sequences of moves considered from current state with associated heuristic value
     # Debug can be toggled on a move by move basis
     # Debug mode that indicates when a branch is pruned and which branch is pruned
-    # Implements mini-max
     # Implements alpha-beta pruning
 
     def __init__(self, levelsDeep, board):
@@ -475,11 +495,12 @@ class Othello_AI:
                 # minimizing level
                 # set this node's heuristic to the lowest
                 if child.heuristic < currentHeuristic:
-                    currentHeuristic = child.Heuristic
+                    currentHeuristic = child.heuristic
         
+        nextMove = None
         if node.parent:
             node.heuristic = currentHeuristic
-        elif node.parent is False:
+        else:
             for child in node.children:
                 if currentHeuristic is child.heuristic:
                     nextMove = child.data
@@ -497,27 +518,35 @@ class Othello_AI:
         # starting a level 0 of the tree
         level = 0
 
-         nextMove = self.generateChildren(source, self.levelsDeep, level)
+        nextMove = self.generateChildren(source, self.levelsDeep, level)
 
         return source, nextMove
 
-    def setCurrentBoardState(self, newBoardState):
-        self.currentBoard = newBoardState
+    def setCurrentBoardState(self, boardState):
+
+        newBoard = deepcopy(boardState)
+
+        for row in newBoard:
+            for square in row:
+                if square[1] is "h":
+                    square[1] = "e"
+        
+        self.currentBoard = newBoard
 
     def runHeuristics(self, node):
         # Calculate coin parity
-        coinHeuristic = coinParityHeuristic(node.data)
+        coinHeuristic = self.coinParityHeuristic(node.data)
         # Calculate Mobility
-        mobilityHeuristic = mobilityHeuristic(node.data)
+        mobilityHeuristic = self.mobilityHeuristic(node.data)
         # Calculate number of corners captured
-        cornerHeuristic = cornerHeuristic(node.data)
+        cornerHeuristic = self.cornerHeuristic(node.data)
         # Calculate stability
-        stabilityHeurisitc = stabliityHeuristic(node.data)
+        stabilityHeurisitc = self.stabliityHeuristic(node.data)
 
         # weight values
         # 30 for corners 5 for mobility 25 for stability 25 for coins
 
-        weightedAverageHeuristic = 0.05*coinHeuristic + 0.25*mobilityHeuristic + 0.30*cornerHeuristic + 0.25*stabilityHeurisitc
+        weightedAverageHeuristic = 0.15*coinHeuristic + 0.15*mobilityHeuristic + 0.40*cornerHeuristic + 0.30*stabilityHeurisitc
 
         node.heuristic = int(weightedAverageHeuristic)
 
@@ -579,28 +608,31 @@ class Othello_AI:
 
     def cornerHeuristic(self, board):
         
+        global player1Color
+        global player2Color
+
         player1Corners = 0
         player2Corners = 0
         
         if board[0][0][1] is player1Color:
             player1Corners += 1
         elif board[0][0][1] is player2Color:
-            player2Color += 1
+            player2Corners += 1
 
-        if board[0][8][1] is player1Color:
+        if board[0][7][1] is player1Color:
             player1Corners += 1
-        elif board[0][8][1] is player2Color:
-            player2Color += 1
+        elif board[0][7][1] is player2Color:
+            player2Corners += 1
 
-        if board[8][0][1] is player1Color:
+        if board[7][0][1] is player1Color:
             player1Corners += 1
-        elif board[8][0][1] is player2Color:
-            player2Color += 1
+        elif board[7][0][1] is player2Color:
+            player2Corners += 1
 
-        if board[8][8][1] is player1Color:
+        if board[7][7][1] is player1Color:
             player1Corners += 1
-        elif board[8][8][1] is player2Color:
-            player2Color += 1
+        elif board[7][7][1] is player2Color:
+            player2Corners += 1
 
         # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
         if self.levelsDeep % 2 is 0:
@@ -629,10 +661,10 @@ class Othello_AI:
             for y in range(COLS):
 
                 if board[x][y][1] is not "e" and board[x][y][1] is not "h":
-                    if checkStable(board, stableSpaces, x, y):
+                    if self.checkStable(board, stableSpaces, x, y):
                         stableSpaces.append(board[x][y])
                         break
-                    elif checkUnstable(board, x, y):
+                    elif self.checkUnstable(board, x, y):
                         unstableSpaces.append(board[x][y])
         
         for space in stableSpaces:
@@ -673,7 +705,21 @@ class Othello_AI:
 
         moves = getValidSpaces(board)
 
-        adjacentSpaces = [board[x+1][y], board[x-1][y], board[x][y+1], board[x][y-1], board[x-1][y-1], board[x+1][y+1], board[x-1][y+1], board[x+1][y-1]]
+        adjacentSpaces = []
+        
+        if x in range(1,6):
+            adjacentSpaces.append(board[x+1][y])
+            adjacentSpaces.append(board[x-1][y])
+
+        if y in range(1,6):
+            adjacentSpaces.append(board[x][y+1])
+            adjacentSpaces.append(board[x][y-1])
+
+        if x in range(1,6) and y in range(1,6):
+            adjacentSpaces.append(board[x-1][y-1])
+            adjacentSpaces.append(board[x+1][y+1])
+            adjacentSpaces.append(board[x-1][y+1])
+            adjacentSpaces.append(board[x+1][y-1])
 
         for space in moves:
             if space[0][0] in adjacentSpaces:
@@ -699,8 +745,9 @@ class Othello_AI:
         if stableHor is False:
             if y is 0 or y is 7:
                 stableHor = True
-            elif board[x][y - 1] in stableSpaces or board[x][y + 1] in stableSpaces:
-                stableHor = True
+            elif y in range(1,7):
+                if board[x][y - 1] in stableSpaces or board[x][y + 1] in stableSpaces:
+                    stableHor = True
         
         # check vertically
         stableVert = True
@@ -715,8 +762,9 @@ class Othello_AI:
         if stableVert is False:
             if x is 0 or x is 7:
                 stableVert = True
-            elif board[x - 1][y] in stableSpaces or board[x + 1][y] in stableSpaces:
-                stableVert = True
+            elif x in range(1,7):
+                if board[x - 1][y] in stableSpaces and board[x - 1][y] in board or board[x + 1][y] in stableSpaces and board[x + 1][y] in board:
+                    stableVert = True
         
         # check diagonals
         stableDiagBack = True
@@ -730,8 +778,9 @@ class Othello_AI:
         if stableDiagBack is False:
             if x is 0 and y is 0 or x is 7 and y is 7:
                 stableDiagBack = True
-            elif board[x - 1][y - 1] in stableSpaces or board[x + 1][y + 1] in stableSpaces:
-                stableDiagBack = True
+            elif x in range(1,7) and y in range(1,7):
+                if board[x - 1][y - 1] in stableSpaces or board[x + 1][y + 1] in stableSpaces:
+                    stableDiagBack = True
         
         stableDiagFront = True
         for zx, zy in zip(range(0,x), range(y,8)):
@@ -744,8 +793,9 @@ class Othello_AI:
         if stableDiagFront is False:
             if x is 0 and y is 0 or x is 7 and y is 7:
                 stableDiagFront = True
-            elif board[x + 1][y - 1] in stableSpaces or board[x + 1][y - 1] in stableSpaces:
-                stableDiagFront = True
+            elif x in range(1,7) and y in range(1,7):
+                if board[x + 1][y - 1] in stableSpaces or board[x -1][y + 1] in stableSpaces:
+                    stableDiagFront = True
 
         if stableHor and stableVert and stableDiagBack and stableDiagFront:
             return True
@@ -785,18 +835,20 @@ gameBoard, boardBackground = createBoard()
 # Create text
 createText()
 
-if compActive is True:
-    comp = Othello_AI(3, deepcopy(gameBoard))
 
-noValidMovesCounter = 0
+comp = Othello_AI(5, deepcopy(gameBoard))
+
+p1NoMoves = False
+p2NoMoves = False
+
+drawBoard(gameBoard, boardBackground)
+drawText(screen)
+pygame.display.flip()
+validMoves = getValidSpaces(gameBoard)
 
 # Main game loop
 done = False
 while not done:
-    
-    # calculate valid spaces based off of the current board state
-    validMoves = getValidSpaces(gameBoard)
-
     
 
     # Main events loop
@@ -804,31 +856,6 @@ while not done:
     for event in pygame.event.get():
         if event.type is pygame.QUIT:
             done = True
-
-        # if there are no valid moves on a player's turn the player must forefiet the turn
-        if len(validMoves) is 0:
-            noValidMovesCounter += 1
-            if noValidMovesCounter is 2:
-                # Game over function, need to grab final scores and throw it up at the end
-                if player1Score > player2Score:
-                    winText = "Player 1 Wins!"
-                else:
-                    winText = "Player 2 Wins!"
-                bottomText = "Game Over: "
-                setBottomText(bottomText+winText)
-            else:
-                bottomText = "No valid moves. Press the F key to forefiet the turn."
-                setBottomText(bottomText)
-                while True:
-                    if event.type is pygame.KEYDOWN:
-                        if event.key is pygame.K_f:
-                            updateTurn()
-                            break
-                    elif event.type is pygame.QUIT:
-                        done = True
-                        break
-        elif noValidMovesCounter > 0:
-            noValidMovesCounter = 0
 
         # If the mouse moves or is clicked
         if compActive is False or compActive is True and turn is player1Color:
@@ -841,21 +868,42 @@ while not done:
                     for square in row:
                         # If the mouse is over the square and the square is empty
                         if square[0].collidepoint(pos) and square[1] is not "b" and square[1] is not "w":
+                            # If the mouse moved, and if the space is valid, highlight the square
+                            if event.type is pygame.MOUSEMOTION:
+                                for move in validMoves:
+                                    if square is move[0]:
+                                        square[1] = "h"
+                            
                             # if it was a click place a piece
-                            if event.type is pygame.MOUSEBUTTONUP and square[1] is "h":
+                            elif event.type is pygame.MOUSEBUTTONUP and square[1] is "h":
                                 
                                 print validMoves
 
                                 flipLines(square, validMoves, gameBoard)
                                 
                                 square[1] = turn
+
+                                printBoard(gameBoard)
+                                print
                                 
                                 updateTurn()
-                            # If the mouse moved, and if the space is valid, highlight the square
-                            if event.type is pygame.MOUSEMOTION:
-                                for move in validMoves:
-                                    if square is move[0]:
-                                        square[1] = "h"
+                                validMoves = getValidSpaces(gameBoard)
+                                
+                                # Update the score
+                                updateScore()
+
+                                # Wipe the screen
+                                screen.fill(BLACK)
+
+                                # Draw the board and pieces
+                                drawBoard(gameBoard, boardBackground)
+
+                                # Draw text elements on the screen
+                                drawText(screen)
+                                
+                                # Update the displaly
+                                pygame.display.flip()
+                            
                         # Un-highlight any square the mouse doesn't touch or isn't valid
                         elif square[1] is "h":
                             square[1] = "e"
@@ -863,16 +911,29 @@ while not done:
         elif compActive is True and turn is player2Color:
             # AI turn
             # Generate new tree
+
             print "AI taking turn."
-            sleep(3)
+            #sleep(1)
             print "Generating tree"
             decisionTree, nextMove = comp.generateTree()
             print "Tree Generated"
             # Make the best move
-            print nextMove
-            updateTurn()
+            if nextMove is not None:
+                printBoard(nextMove)
+                gameBoard = deepcopy(nextMove)
+                updateTurn()
+                validMoves = getValidSpaces(gameBoard)
+            else:
+                print "AI has lost?"
+            
 
     comp.setCurrentBoardState(gameBoard)
+
+    # TODO:
+    # Redo valid move detection and game over detection
+    # Create an update board function
+    # Fix set borrom text
+        
 
     # Update the score
     updateScore()
@@ -889,9 +950,4 @@ while not done:
     # Update the displaly
     pygame.display.flip()
 
-
-    # TODO:
-    # 
-    # game over/win message
-    # Scoring
 
