@@ -462,20 +462,31 @@ class Othello_AI:
             childHeuristics = []
             for child in node.children:
                 # run heuristic function on theb board state
-                #set child's heuristic
-                pass
+                self.runHeuristics(child)
 
+        currentHeuristic = 0
         for child in node.children:
             if currentLevel % 2 is 0:
                 # maximizing level
                 # set this node's heuristic to the highest
-                pass
+                if child.heuristic > currentHeuristic:
+                    currentHeuristic = child.heuristic
             else:
                 # minimizing level
                 # set this node's heuristic to the lowest
-                pass
+                if child.heuristic < currentHeuristic:
+                    currentHeuristic = child.Heuristic
+        
+        if node.parent:
+            node.heuristic = currentHeuristic
+        elif node.parent is False:
+            for child in node.children:
+                if currentHeuristic is child.heuristic:
+                    nextMove = child.data
 
         turn = startingNodeTurn
+
+        return nextMove
 
     def generateTree(self):
     
@@ -486,20 +497,34 @@ class Othello_AI:
         # starting a level 0 of the tree
         level = 0
 
-        self.generateChildren(source, self.levelsDeep, level)
+         nextMove = self.generateChildren(source, self.levelsDeep, level)
 
-        return source
+        return source, nextMove
 
     def setCurrentBoardState(self, newBoardState):
         self.currentBoard = newBoardState
 
     def runHeuristics(self, node):
         # Calculate coin parity
+        coinHeuristic = coinParityHeuristic(node.data)
         # Calculate Mobility
+        mobilityHeuristic = mobilityHeuristic(node.data)
         # Calculate number of corners captured
+        cornerHeuristic = cornerHeuristic(node.data)
         # Calculate stability
+        stabilityHeurisitc = stabliityHeuristic(node.data)
 
-        pass
+        # weight values
+        # 30 for corners 5 for mobility 25 for stability 25 for coins
+
+        weightedAverageHeuristic = 0.05*coinHeuristic + 0.25*mobilityHeuristic + 0.30*cornerHeuristic + 0.25*stabilityHeurisitc
+
+        node.heuristic = int(weightedAverageHeuristic)
+
+        # Dynamically assigned weights
+        # Prioritize stability and mobility early
+        # Shift to stability and corners in the mid game (Moves 15-45)
+        # Once you can see the end of the game in the search tree prioritize coins
 
     def coinParityHeuristic(self, board):
         p1Score = 0
@@ -841,10 +866,10 @@ while not done:
             print "AI taking turn."
             sleep(3)
             print "Generating tree"
-            decisionTree = comp.generateTree()
+            decisionTree, nextMove = comp.generateTree()
             print "Tree Generated"
-            # Run algorithms
             # Make the best move
+            print nextMove
             updateTurn()
 
     comp.setCurrentBoardState(gameBoard)
