@@ -1,16 +1,12 @@
 class Node:
 
-    def __init__(self, data):
+    def __init__(self, data, name):
         self.data = data
         self.heuristic = None
         self.children = []
         self.parent = None
-        self.alpha = None
-        self.beta = None
+        self.name = name
 
     def addChild(self, node):
-        node.parent = self
+        node.parent = self    
         self.children.append(node)
-
-    def getParent(self):
-        return self.parent
