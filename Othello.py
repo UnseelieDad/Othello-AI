@@ -35,6 +35,8 @@ global compActive
 global gameOver
 global p1NoMove
 global p2NoMove
+global foundGameOver
+global turnCount
 
 
 isStart = True
@@ -48,6 +50,8 @@ compActive = True
 p1NoMove = False
 p2NoMove = False
 gameOver = False
+foundGameOver = False
+turnCount = 1
 
 # Initialize the the back of the game board and each individual square in an 8x8 grid.
 def createBoard():
@@ -154,6 +158,10 @@ def setBottomText(text, screen):
 def updateTurn():
 
     global turn
+    global turnCount
+
+    turnCount += 1
+    print "Turn: {}".format(turnCount)
     
     if turn is "b":
         turn = "w"
@@ -450,10 +458,11 @@ def forefietTurn(screen):
                 if event.key is pygame.K_f:
                     updateTurn()
                     updateBoard()
-                    break
+                    return
 
 def checkGameOver(board):
 
+    global turn
     originalTurn = turn
 
     turn = "b"
@@ -590,11 +599,12 @@ class Othello_AI:
             print child.heuristic
         
         for child in source.children:
-            if nextMove is child.heuristic:
+            if nextMove is child.heuristic: 
                 nextMove = child.data
                 break
-            elif isinf(nextMove):
-                nextMove = None
+
+        if type(nextMove) is not list:
+            nextMove = None
 
         
         turn = originalTurn
@@ -603,6 +613,7 @@ class Othello_AI:
     def detectGameOver(self, board):
 
         global turn
+        global foundGameOver
         originalTurn = turn
 
         turn = "b"
@@ -613,6 +624,7 @@ class Othello_AI:
 
         if len(blackValidMoves) is 0 and len(whiteValidMoves) is 0:
             turn = originalTurn
+            foundGameOver = True
             return True
 
         else:
@@ -640,17 +652,18 @@ class Othello_AI:
         # Calculate stability
         stabilityHeurisitc = self.stabliityHeuristic(node.data)
 
-        # weight values
-        # 30 for corners 5 for mobility 25 for stability 25 for coins
-
-        weightedAverageHeuristic = 0.25*coinHeuristic + 0.25*mobilityHeuristic + 0.25*cornerHeuristic + 0.25*stabilityHeurisitc
+        # weight values Dynamically based on board state.
+        
+        if foundGameOver is True:
+            weightedAverageHeuristic = 1.00*coinHeuristic + 0.00*mobilityHeuristic + 0.00*cornerHeuristic + 0.00*stabilityHeurisitc
+        
+        elif turnCount > 20:
+            weightedAverageHeuristic = 0.05*coinHeuristic + 0.10*mobilityHeuristic + 0.45*cornerHeuristic + 0.40*stabilityHeurisitc
+        
+        else:
+            weightedAverageHeuristic = 0.05*coinHeuristic + 0.45*mobilityHeuristic + 0.10*cornerHeuristic + 0.40*stabilityHeurisitc
 
         node.heuristic = weightedAverageHeuristic
-
-        # Dynamically assigned weights
-        # Prioritize stability and mobility early
-        # Shift to stability and corners in the mid game (Moves 15-45)
-        # Once you can see the end of the game in the search tree prioritize coins
 
     def coinParityHeuristic(self, board):
         p1Score = 0
@@ -663,13 +676,8 @@ class Othello_AI:
                 elif space[1] is player2Color:
                     p2Score += 1
         
-        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
-        if self.levelsDeep % 2 is 0:
-            maxPlayerScore = p2Score
-            minPlayerScore = p1Score
-        else:
-            maxPlayerScore = p1Score
-            minPlayerScore = p2Score
+        maxPlayerScore = p2Score
+        minPlayerScore = p1Score
         
         heuristic = 100 * (maxPlayerScore - minPlayerScore) / (maxPlayerScore + minPlayerScore)
 
@@ -688,13 +696,10 @@ class Othello_AI:
         moves = getValidSpaces(board)
         player1Mobility = len(moves)
 
-        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
-        if self.levelsDeep % 2 is 0:
-            maxPlayerMobility = player2Mobility
-            minPlayerMobility = player1Mobility
-        else:
-            maxPlayerMobility = player1Mobility
-            minPlayerMobility = player2Mobility
+        turn = originalTurn
+        
+        maxPlayerMobility = player2Mobility
+        minPlayerMobility = player1Mobility
 
         if player2Mobility + player1Mobility is not 0:
             heuristic = 100 * (maxPlayerMobility - minPlayerMobility) / (maxPlayerMobility + minPlayerMobility)
@@ -707,37 +712,68 @@ class Othello_AI:
         
         global player1Color
         global player2Color
+        global turn
 
         player1Corners = 0
         player2Corners = 0
+
+        corners = [board[0][0], board[0][7], board[7][0], board[7][7]]
+
         
-        if board[0][0][1] is player1Color:
-            player1Corners += 1
-        elif board[0][0][1] is player2Color:
-            player2Corners += 1
-
-        if board[0][7][1] is player1Color:
-            player1Corners += 1
-        elif board[0][7][1] is player2Color:
-            player2Corners += 1
-
-        if board[7][0][1] is player1Color:
-            player1Corners += 1
-        elif board[7][0][1] is player2Color:
-            player2Corners += 1
-
-        if board[7][7][1] is player1Color:
-            player1Corners += 1
-        elif board[7][7][1] is player2Color:
-            player2Corners += 1
-
-        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
-        if self.levelsDeep % 2 is 0:
-            maxPlayerCorner = player2Corners
-            minPlayerCorner = player1Corners
+        originalTurn = turn
+        if turn is "b":
+            turn = "w"
         else:
-            maxPlayerCorner = player1Corners
-            minPlayerCorner = player2Corners
+            turn = "b"
+        
+        nextMoves = getValidSpaces(board)
+        turn = originalTurn
+
+        for space in corners:
+            if space[1] is "b" or space[1] is "w":
+                if space[1] is player1Color:
+                    player1Corners += 1
+                
+                elif space[1] is player2Color:
+                    player2Corners += 1
+            
+            else:
+                # check if remaining corners are potentially attainable
+                for move in nextMoves:
+                    if move[0] is space:
+                        if move[0][1] is player2Color:
+                            player2Corners += 0.5
+                        elif move[0][1] is player1Color:
+                            player1Corners += 0.5
+                        
+
+
+        
+        # if board[0][0][1] is player1Color:
+        #     player1Corners += 1
+        # elif board[0][0][1] is player2Color:
+        #     player2Corners += 1
+
+        # if board[0][7][1] is player1Color:
+        #     player1Corners += 1
+        # elif board[0][7][1] is player2Color:
+        #     player2Corners += 1
+
+        # if board[7][0][1] is player1Color:
+        #     player1Corners += 1
+        # elif board[7][0][1] is player2Color:
+        #     player2Corners += 1
+
+        # if board[7][7][1] is player1Color:
+        #     player1Corners += 1
+        # elif board[7][7][1] is player2Color:
+        #     player2Corners += 1
+
+        # captured potential unlikely
+
+
+        maxPlayerCorner = player2Corners
+        minPlayerCorner = player1Corners
         
         if player2Corners + player1Corners is not 0:
             heuristic = 100 * (maxPlayerCorner - minPlayerCorner) / (maxPlayerCorner + minPlayerCorner)
@@ -760,7 +796,6 @@ class Othello_AI:
                 if board[x][y][1] is not "e" and board[x][y][1] is not "h":
                     if self.checkStable(board, stableSpaces, x, y):
                         stableSpaces.append(board[x][y])
-                        break
                     elif self.checkUnstable(board, x, y):
                         unstableSpaces.append(board[x][y])
         
@@ -775,15 +810,10 @@ class Othello_AI:
                 player1Stability -= 1
             elif space[1] is player2Color:
                 player2Stability -= 1
-
-        # Check if the level the heuristic is being run on is a minimizing level or a maximizing level
-        if self.levelsDeep % 2 is 0:
-            maxPlayerStability = player2Stability
-            minPlayerStability = player1Stability
-        else:
-            maxPlayerStability = player1Stability
-            minPlayerStability = player2Stability
-
+        
+        maxPlayerStability = player2Stability
+        minPlayerStability = player1Stability
+        
         if player2Stability + player1Stability is not 0:
             heuristic = 100 * (maxPlayerStability - minPlayerStability) / (maxPlayerStability + minPlayerStability)
         else:
@@ -802,29 +832,42 @@ class Othello_AI:
 
         moves = getValidSpaces(board)
 
-        adjacentSpaces = []
-        
-        if x in range(1,6):
-            adjacentSpaces.append(board[x+1][y])
-            adjacentSpaces.append(board[x-1][y])
-
-        if y in range(1,6):
-            adjacentSpaces.append(board[x][y+1])
-            adjacentSpaces.append(board[x][y-1])
-
-        if x in range(1,6) and y in range(1,6):
-            adjacentSpaces.append(board[x-1][y-1])
-            adjacentSpaces.append(board[x+1][y+1])
-            adjacentSpaces.append(board[x-1][y+1])
-            adjacentSpaces.append(board[x+1][y-1])
+        turn = originalTurn
 
         for space in moves:
-            if space[0][0] in adjacentSpaces:
-                turn = originalTurn
+            
+            if board[x][y][0] is space[0][0] and space[0][1] is not board[x][y][1]:
+                print board[x][y][1]
+                print space[0][1]
                 return True
+        else:
+            return False
 
-        turn = originalTurn
-        return False
+
+
+        # adjacentSpaces = []
+        
+        # if x in range(1,6):
+        #     adjacentSpaces.append(board[x+1][y])
+        #     adjacentSpaces.append(board[x-1][y])
+
+        # if y in range(1,6):
+        #     adjacentSpaces.append(board[x][y+1])
+        #     adjacentSpaces.append(board[x][y-1])
+
+        # if x in range(1,6) and y in range(1,6):
+        #     adjacentSpaces.append(board[x-1][y-1])
+        #     adjacentSpaces.append(board[x+1][y+1])
+        #     adjacentSpaces.append(board[x-1][y+1])
+        #     adjacentSpaces.append(board[x+1][y-1])
+
+        # for space in moves:
+        #     if space[0][0] in adjacentSpaces:
+        #         turn = originalTurn
+        #         return True
+
+        # turn = originalTurn
+        # return False
     
     def checkStable(self, board, stableSpaces, x, y):
 
@@ -931,7 +974,7 @@ gameBoard, boardBackground = createBoard()
 createText()
 
 
-comp = Othello_AI(4, deepcopy(gameBoard))
+comp = Othello_AI(3, deepcopy(gameBoard))
 
 drawBoard(gameBoard, boardBackground)
 drawText(screen)
@@ -951,7 +994,7 @@ while not done:
             
             gameOver = True
             
-            if player1Score > player1Score:
+            if player1Score > player2Score:
                 setBottomText("Player 1 Wins!", screen)
             
             else:
