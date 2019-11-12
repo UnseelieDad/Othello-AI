@@ -557,7 +557,7 @@ class Othello_AI:
         self.currentBoard = board
 
     # Generate children from a given node
-    def generateChildren(self, node, currentLevel):
+    def generateChildren(self, node):
 
         global turn
         startingNodeTurn = turn
@@ -604,20 +604,20 @@ class Othello_AI:
 
             spaceFound = False
 
-        currentLevel += 1
+        # currentLevel += 1
 
-        # If not max level continue generating tree
-        if currentLevel is not self.levelsDeep:
-            if turn is "b":
-                turn = "w"
+        # # If not max level continue generating tree
+        # if currentLevel is not self.levelsDeep:
+        #     if turn is "b":
+        #         turn = "w"
 
-            else:
-                turn = "b"
+        #     else:
+        #         turn = "b"
 
-            for child in node.children:
-                self.generateChildren(child, currentLevel)
+        #     for child in node.children:
+        #         self.generateChildren(child, currentLevel)
 
-        turn = startingNodeTurn
+        # turn = startingNodeTurn
 
     # Minimax algorithm with AB pruning
     def minimax(self, node, level, alpha, beta, maximizingPlayer):
@@ -629,6 +629,9 @@ class Othello_AI:
                 print "Leaf Node"
                 print "Heuristic Calculated. Move {} has a value of {}\n".format(node.move, node.heuristic)
             return node.heuristic
+        
+        else:
+            self.generateChildren(node)
 
         # If node is for the maximizing player
         if maximizingPlayer:
@@ -705,7 +708,7 @@ class Othello_AI:
         # starting a level 0 of the tree
         level = 0
         
-        self.generateChildren(source, level)
+        # self.generateChildren(source, level)
 
         if DEBUG is True:
             print "Starting board:"
@@ -1084,7 +1087,7 @@ gameBoard, boardBackground = createBoard()
 createText()
 
 # Initalize AI
-comp = Othello_AI(3, deepcopy(gameBoard))
+comp = Othello_AI(6, deepcopy(gameBoard))
 
 drawBoard(gameBoard, boardBackground)
 drawText(screen)
