@@ -1,12 +1,23 @@
-'''Othello game program.'''
+# Seth Martin
+# CWID: 10252074
+# 11/11/19
+# Assignment 3
+# This program implements the board game Othello in graphical form.
+# This proram facilitates play by two human players or one human and
+# an AI player.
 
+# THe Graphical library used
 import pygame
+# Node class for generating tree
 from Node import Node
+# For randomly deciding who's black
 from random import randint
+# To slow the AI down a little
 from time import sleep
+# To make copies of the board states
 from copy import deepcopy
-from math import isinf
 
+# Initialize pygame
 pygame.init()
 
 # Constants
@@ -37,6 +48,7 @@ global p1NoMove
 global p2NoMove
 global foundGameOver
 global turnCount
+global DEBUG
 
 
 isStart = True
@@ -52,6 +64,7 @@ p2NoMove = False
 gameOver = False
 foundGameOver = False
 turnCount = 1
+DEBUG = False
 
 # Initialize the the back of the game board and each individual square in an 8x8 grid.
 def createBoard():
@@ -117,57 +130,74 @@ def drawPiece(square):
 
     pygame.draw.circle(screen, color, square[0].center, SQUARE_X / 3)
 
+# Create inital text displayed on the screen
 def createText():
 
+    # Create player 1 text
     player1Text = FONT.render("Player 1 Score:", True, GREEN)
     player1TextRect = player1Text.get_rect()
     player1TextRect.center = ((CORNER_X / 2),(CORNER_Y / 2))
 
+    # Create player 2 text
     player2Text = FONT.render("Player 2 Score:", True, GREEN)
     player2TextRect = player2Text.get_rect()
     player2TextRect.center = ((BOARD_X + CORNER_X * 1.5), (CORNER_Y / 2))
 
+    # If player 1 is first set bottom text to player 1's turn
+    # Otherwise, set it to player 2
     if first is 1:
         turnText = FONT.render("Player 1's Turn", True, GREEN)
+   
     else:
         turnText = FONT.render("Player 2's Turn", True, GREEN)
+    
     turnTextRect = turnText.get_rect()
     turnTextRect.center = ((RES_X / 2), (BOARD_Y + CORNER_Y * 1.5))
 
+    # Create player 1's score
     player1ScoreText = FONT.render("{}".format(player1Score), True, GREEN)
     player1ScoreTextRect = player1ScoreText.get_rect()
     player1ScoreTextRect.center = (player1TextRect.center[0], (player1TextRect.center[1] + 40))
 
+    # Create player 2's score
     player2ScoreText = FONT.render("{}".format(player2Score), True, GREEN)
     player2ScoreTextRect = player2ScoreText.get_rect()
     player2ScoreTextRect.center = (player2TextRect.center[0], (player2TextRect.center[1] + 40))
 
+    # Add text to text list
     textList.extend([(player1Text, player1TextRect), (player2Text, player2TextRect), (turnText, turnTextRect), (player1ScoreText, player1ScoreTextRect), (player2ScoreText, player2ScoreTextRect)])
 
+# Set the text at the bottom of the window to a passed-in string
 def setBottomText(text, screen):
 
+    # If bottom text exists in list, remove old text
     if textList[2]:
         oldTurnText = textList.pop(2)
 
+    # Create new text using the old text's rectangle
     newTurnText = (FONT.render(text, True, GREEN), oldTurnText[1])
 
+    # Add text back to the list, draw it to the screen, and update the screen.
     textList.insert(2, newTurnText)
     drawText(screen)
     pygame.display.flip()
 
+# Update whose turn it is
 def updateTurn():
 
     global turn
     global turnCount
 
     turnCount += 1
-    print "Turn: {}".format(turnCount)
+    print "Turn: {}\n".format(turnCount)
     
+    # Switch turns
     if turn is "b":
         turn = "w"
     else:
         turn = "b"
 
+    # Update turn text at the bottom of the screen
     if textList[2]:
         oldTurnText = textList.pop(2)
 
@@ -178,6 +208,7 @@ def updateTurn():
 
         textList.insert(2, newTurnText)   
 
+# Update player scores
 def updateScore():
 
     #global textList    
@@ -186,6 +217,7 @@ def updateScore():
     player1Score = 0
     player2Score = 0
 
+    # count discs for each player and add them up
     for row in gameBoard:
         for square in row:
             if square[1] is player1Color:
@@ -193,6 +225,11 @@ def updateScore():
             elif square[1] is player2Color:
                 player2Score += 1
 
+    print "Player 1 Score: {}".format(player1Score)
+    print "Player 2 Score: {}".format(player2Score)
+    print
+
+    # Get old display rectangles
     player1ScoreTextRect = textList[3][1]
     player2ScoreTextRect = textList[4][1]
 
@@ -200,18 +237,20 @@ def updateScore():
     if len(textList) > 3:
         textList = textList[:-2]
 
+    # Make new score text based on new scores
     player1ScoreText = FONT.render("{}".format(player1Score), True, GREEN)
     player2ScoreText = FONT.render("{}".format(player2Score), True, GREEN)
 
-
-
+    # Add new scores back to the list
     textList.extend([(player1ScoreText, player1ScoreTextRect), (player2ScoreText, player2ScoreTextRect)])
 
+# Draw all text to the screen
 def drawText(screen):
 
     for text in textList:
         screen.blit(text[0], text[1])
 
+# From the current board state, all valid moves for the current player
 def getValidSpaces(board):
 
     validSpaces = []
@@ -319,8 +358,10 @@ def getValidSpaces(board):
                     validSpaces.append((currentSpace, flankDirections))
                 flankDirections = []
 
+    # Return a list of the valid moves and directions of flanked pieces from that space
     return validSpaces
 
+# Once a piece is placed, flip all the flanked pieces
 def flipLines(square, validMoves, board):
     
     x = 0
@@ -328,11 +369,12 @@ def flipLines(square, validMoves, board):
 
     directions = []
 
+    # Get the flanking directions for the square the piece was placed in
     for move in validMoves:
         if square is move[0]:
             directions = move[1]
             
-
+    # get the indicies of the passed in square
     for row, rows in enumerate(board):
         if square in rows:
             x = row
@@ -340,10 +382,12 @@ def flipLines(square, validMoves, board):
 
 
     if square is board[x][y]:
+        # For each direction where pieces can be flanked
         for direction in directions:
             zx = x
             zy = y
 
+            # Flip all pieces to the left between square and a piece of the same color
             if direction is 1:
                 while True:
                     zy -= 1
@@ -351,6 +395,8 @@ def flipLines(square, validMoves, board):
                         break
                     else:
                         flipPiece(board[zx][zy])
+            
+            # Flip pieces up and left
             elif direction is 2:
                 while True:
                     zy -= 1
@@ -359,6 +405,8 @@ def flipLines(square, validMoves, board):
                         break
                     else:
                         flipPiece(board[zx][zy])
+            
+            # Flip pieces above this piece
             elif direction is 3:
                 while True:
                     zx -= 1
@@ -366,6 +414,8 @@ def flipLines(square, validMoves, board):
                         break
                     else:
                         flipPiece(board[zx][zy])
+            
+            # Flip pieces up and right
             elif direction is 4:
                 while True:
                     zx -= 1
@@ -374,6 +424,8 @@ def flipLines(square, validMoves, board):
                         break
                     else:
                         flipPiece(board[zx][zy])
+            
+            # Flip ieces to the right
             elif direction is 5:
                 while True:
                     zy += 1
@@ -381,6 +433,8 @@ def flipLines(square, validMoves, board):
                         break
                     else:
                         flipPiece(board[zx][zy])
+            
+            # Flip pieces down and right
             elif direction is 6:
                 while True:
                     zx += 1
@@ -389,6 +443,8 @@ def flipLines(square, validMoves, board):
                         break
                     else:
                         flipPiece(board[zx][zy])
+            
+            #Flip pieces below this piece
             elif direction is 7:
                 while True:
                     zx += 1
@@ -396,6 +452,8 @@ def flipLines(square, validMoves, board):
                         break
                     else:
                         flipPiece(board[zx][zy])
+            
+            # Flip pieces down and left
             elif direction is 8:
                 while True:
                     zx += 1
@@ -405,6 +463,7 @@ def flipLines(square, validMoves, board):
                     else:
                         flipPiece(board[zx][zy])
 
+# Flip and individual piece
 def flipPiece(square):
 
     if square[1] is not "e" and square[1] is not "h":
@@ -412,7 +471,8 @@ def flipPiece(square):
             square[1] = "w"
         else:
             square[1] = "b"
-    
+
+# Print the board to the console    
 def printBoard(board):
 
     printRow = []
@@ -426,10 +486,8 @@ def printBoard(board):
         print(printRow)
         printRow = []
 
+# Redraw the screen
 def updateBoard():
-    
-    # Update the score
-    updateScore()
 
     # Wipe the screen
     screen.fill(BLACK)
@@ -443,15 +501,19 @@ def updateBoard():
     # Update the displaly
     pygame.display.flip()
 
-def forefietTurn(screen):
+# If one of the players has no moves left, press f to forefeit the turn
+def forefeitTurn(screen):
     
     if turn is player1Color:
         setBottomText("Player 1 no moves. Press F to continue.", screen)
+        print "Player 1 has no moves."
     else:
         setBottomText("Player 2 no moves. Press F to continue.", screen)
+        print "Player 2 has no moves."
 
     updateBoard()
 
+    # Do nothing until f is pressed
     while True:
         for event in pygame.event.get():
             if event.type is pygame.KEYDOWN:
@@ -460,6 +522,7 @@ def forefietTurn(screen):
                     updateBoard()
                     return
 
+# Check if the game is over
 def checkGameOver(board):
 
     global turn
@@ -471,6 +534,7 @@ def checkGameOver(board):
     turn = "w"
     whiteValidMoves = getValidSpaces(board)
 
+    # If neither player has valid moves from the current board state the game is over
     if len(whiteValidMoves) is 0 and len(blackValidMoves) is 0:
         turn = originalTurn
         return True
@@ -478,17 +542,21 @@ def checkGameOver(board):
         turn = originalTurn
         return False
 
+# Get the index values for an item in a 2d list
+def index2D(myList, v):
+    for i, x in enumerate(myList):
+        if v in x:
+            return (i, x.index(v))
+
+# AI implementing minimax with Alpha Beta Pruning to play Othello
 class Othello_AI:
 
-    # Requirements:
-    # Debug mode that prints out sequences of moves considered from current state with associated heuristic value
-    # Debug can be toggled on a move by move basis
-    # Debug mode that indicates when a branch is pruned and which branch is pruned
-
+    # Construct AI with how many levels deep to probe and the initial board state
     def __init__(self, levelsDeep, board):
         self.levelsDeep = levelsDeep
         self.currentBoard = board
 
+    # Generate children from a given node
     def generateChildren(self, node, currentLevel):
 
         global turn
@@ -496,7 +564,7 @@ class Othello_AI:
         spaceFound = False
         sourceBoard = node.data
         initialState = deepcopy(sourceBoard)
-        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890,./;'[]-=<>?:|+"
+        move = None
        
        # Get valid moves from the board state stored in the current node
         validMoves = getValidSpaces(sourceBoard)
@@ -512,6 +580,12 @@ class Othello_AI:
                     if space[0][0] is square[0]:
                         # place a piece of the appropriate color and flip the flanked pieces to create a new board state
                         square[1] = turn
+
+                        # Get index of the square on the board
+                        x, y = index2D(sourceBoard, square)
+                        # Create data that represents the move
+                        move = ((x,y), square[1])
+
                         flipLines(square, validMoves, sourceBoard)
                         spaceFound = True
                         break
@@ -519,15 +593,8 @@ class Othello_AI:
             # Create a node with the new board state and add it to the current node's children
             newBoard = deepcopy(sourceBoard)
 
-            if len(node.children) is not 0:
-                siblings = node.children
-                lastName = siblings[-1].name
-            
-            else:
-                lastName = node.name
-
-            name = alphabet[alphabet.find(lastName)+1]
-            childState = Node(newBoard, name)
+            # Create a new neode with the move and board state and add it to children
+            childState = Node(newBoard, move)
             node.addChild(childState)
 
             # Reset source board
@@ -552,51 +619,104 @@ class Othello_AI:
 
         turn = startingNodeTurn
 
+    # Minimax algorithm with AB pruning
     def minimax(self, node, level, alpha, beta, maximizingPlayer):
 
+        # If this is a leaf node or game over state, run the heuristic
         if level is self.levelsDeep or self.detectGameOver(node.data) is True:
             self.runHeuristics(node)
+            if DEBUG is True:
+                print "Leaf Node"
+                print "Heuristic Calculated. Move {} has a value of {}\n".format(node.move, node.heuristic)
             return node.heuristic
 
+        # If node is for the maximizing player
         if maximizingPlayer:
             maxEval = float("-inf")
             for child in node.children:
+                # Get the heuristic for each child
                 eval = self.minimax(child, level + 1, alpha, beta, False)
+                if DEBUG is True:
+                    print "Maximizing Node"
+                    print "Considering  child move {} with value {}. Current max value for move {} is: {}".format(child.move, child.heuristic, node.move, maxEval)
+                # Use new heuristic if it's higher
                 maxEval = max(maxEval, eval)
+                if DEBUG is True:
+                    print "Updated Maximum Value: {}\n".format(maxEval)
+                # Update alpha with the new heuristic if it's higher
                 alpha = max(alpha, eval)
+                # if beta is <= alpha, prune remaining children
                 if beta <= alpha:
+                    if DEBUG is True:
+                        print "Beta {} for is <= Alpha {} for Maximizing Node".format(beta, alpha)
+                        print "Remaining children of {} Alpha-pruned.\n".format(node.move)
                     break
+            # Parent node's value is equal to it's largest child
             node.heuristic = maxEval
+            if DEBUG is True:
+                print "Final Value for {}: {}\n".format(node.move, node.heuristic)
             return maxEval
 
         else:
+            # Node for minimizing player
             minEval = float("inf")
             for child in node.children:
+                # Evaluate each child
                 eval = self.minimax(child, level + 1, alpha, beta, True)
+                if DEBUG is True:
+                    print "Minimizing Node"
+                    print "Considering  child move {} with value {}. Current min value for move {} is: {}".format(child.move, child.heuristic, node.move, minEval)
+                # Use new heuristic if it's lower
                 minEval = min(minEval, eval)
+                if DEBUG is True:
+                    print "Updated Minimum Value: {}\n".format(minEval)
+                # update beta if the new heuristic is lower
                 beta = min(beta, eval)
+                # If beta <= alpha, prune remaining children
                 if beta <= alpha:
+                    if DEBUG is True:
+                        print "Beta {} is <= Alpha {} for Minimizing Node".format(beta, alpha)
+                        print "Remaining children of {} Beta-pruned.\n".format(node.move)
                     break
+            # Current node's heurisitc is its smallest child's
             node.heuristic = minEval
+            if DEBUG is True:
+                print "Final Value for {}: {}\n".format(node.move, node.heuristic)
             return minEval
 
+    # Print the sequence of nodes considered for the final heuristic
+    def printMoveSequence(self, node):
+        print "{} {}".format(node.move, node.heuristic)
+        
+        if len(node.children) is not 0:
+            for child in node.children:
+                if child.heuristic is node.heuristic:
+                    self.printMoveSequence(child)
+
+    # Generate a tree for all valid board states from the current state and run minimax on it
+    # Return the root node and the new board state that results from the chosen move
     def generateTree(self):
     
         # source is the first node
         global turn
         originalTurn = turn
-        source = Node(self.currentBoard, "A")
+        source = Node(self.currentBoard, "Source")
 
         # starting a level 0 of the tree
         level = 0
         
         self.generateChildren(source, level)
 
+        if DEBUG is True:
+            print "Starting board:"
+            printBoard(source.data)
+
         nextMove = self.minimax(source, level, float("-inf"), float("inf"), True)
 
-        print nextMove
-        for child in source.children:
-            print child.heuristic
+        if DEBUG is True:
+            print "Final Move Sequence:"
+            self.printMoveSequence(source)
+            print
         
         for child in source.children:
             if nextMove is child.heuristic: 
@@ -610,6 +730,7 @@ class Othello_AI:
         turn = originalTurn
         return source, nextMove
 
+    # Detect if the current board state satisfies the game over condition
     def detectGameOver(self, board):
 
         global turn
@@ -631,6 +752,7 @@ class Othello_AI:
             turn = originalTurn
             return False
 
+    # Update AI's knowledge of the current board state
     def setCurrentBoardState(self, boardState):
 
         newBoard = deepcopy(boardState)
@@ -642,29 +764,35 @@ class Othello_AI:
         
         self.currentBoard = newBoard
 
+    # Run four heuristic functions on the node and weight them dynamically
+    # Depending on the current statge of the game
     def runHeuristics(self, node):
         # Calculate coin parity
         coinHeuristic = self.coinParityHeuristic(node.data)
         # Calculate Mobility
         mobilityHeuristic = self.mobilityHeuristic(node.data)
-        # Calculate number of corners captured
+        # Calculate corners captured and potential corners to capture
         cornerHeuristic = self.cornerHeuristic(node.data)
-        # Calculate stability
+        # Calculate stability of the board
         stabilityHeurisitc = self.stabliityHeuristic(node.data)
 
-        # weight values Dynamically based on board state.
+        # Weight values are adjusted dynamically based on board state.
         
         if foundGameOver is True:
+            # Focus on getting coins if the game is close to ending
             weightedAverageHeuristic = 1.00*coinHeuristic + 0.00*mobilityHeuristic + 0.00*cornerHeuristic + 0.00*stabilityHeurisitc
         
         elif turnCount > 20:
+            # Focus on board stability and corners in the mid-game
             weightedAverageHeuristic = 0.05*coinHeuristic + 0.10*mobilityHeuristic + 0.45*cornerHeuristic + 0.40*stabilityHeurisitc
         
         else:
+            # Focus on mobility and stability early on
             weightedAverageHeuristic = 0.05*coinHeuristic + 0.45*mobilityHeuristic + 0.10*cornerHeuristic + 0.40*stabilityHeurisitc
 
         node.heuristic = weightedAverageHeuristic
 
+    # Calculate heuristic based off of player scores
     def coinParityHeuristic(self, board):
         p1Score = 0
         p2Score = 0
@@ -683,6 +811,7 @@ class Othello_AI:
 
         return heuristic
         
+    # Calculate heuristic based on player mobility
     def mobilityHeuristic(self, board):
         
         global turn
@@ -708,6 +837,7 @@ class Othello_AI:
         
         return heuristic
 
+    # Calculate heuristic based on corners captured and corners near capture
     def cornerHeuristic(self, board):
         
         global player1Color
@@ -730,6 +860,7 @@ class Othello_AI:
         turn = originalTurn
 
         for space in corners:
+            # Corner's are already captured
             if space[1] is "b" or space[1] is "w":
                 if space[1] is player1Color:
                     player1Corners += 1
@@ -745,32 +876,6 @@ class Othello_AI:
                             player2Corners += 0.5
                         elif move[0][1] is player1Color:
                             player1Corners += 0.5
-                        
-
-
-        
-        # if board[0][0][1] is player1Color:
-        #     player1Corners += 1
-        # elif board[0][0][1] is player2Color:
-        #     player2Corners += 1
-
-        # if board[0][7][1] is player1Color:
-        #     player1Corners += 1
-        # elif board[0][7][1] is player2Color:
-        #     player2Corners += 1
-
-        # if board[7][0][1] is player1Color:
-        #     player1Corners += 1
-        # elif board[7][0][1] is player2Color:
-        #     player2Corners += 1
-
-        # if board[7][7][1] is player1Color:
-        #     player1Corners += 1
-        # elif board[7][7][1] is player2Color:
-        #     player2Corners += 1
-
-        # captured potential unlikely
-
 
         maxPlayerCorner = player2Corners
         minPlayerCorner = player1Corners
@@ -782,6 +887,7 @@ class Othello_AI:
 
         return heuristic
 
+    # Calculate the stability of the board state
     def stabliityHeuristic(self, board):
         
         stableSpaces = []
@@ -793,21 +899,26 @@ class Othello_AI:
         for x in range(ROWS):
             for y in range(COLS):
 
+                # Only count spaces with discs on them
                 if board[x][y][1] is not "e" and board[x][y][1] is not "h":
                     if self.checkStable(board, stableSpaces, x, y):
                         stableSpaces.append(board[x][y])
+                    
                     elif self.checkUnstable(board, x, y):
                         unstableSpaces.append(board[x][y])
         
+        # Add for every stable space, subtract for each unstable space
         for space in stableSpaces:
             if space[1] is player1Color:
                 player1Stability += 1
+            
             elif space[1] is player2Color:
                 player2Stability += 1
 
         for space in unstableSpaces:
             if space[1] is player1Color:
                 player1Stability -= 1
+            
             elif space[1] is player2Color:
                 player2Stability -= 1
         
@@ -820,8 +931,10 @@ class Othello_AI:
             heuristic = 0
 
         return heuristic
-                    
+
+    # Check if the space at the passed-in coordinates on the board is unstable                
     def checkUnstable(self, board, x, y):
+        
         # If piece can be taken in the next move it is unstable
         global turn
         originalTurn = turn
@@ -830,45 +943,36 @@ class Othello_AI:
         else:
             turn = "b"
 
+        # Get the next moves
         moves = getValidSpaces(board)
 
         turn = originalTurn
 
-        for space in moves:
-            
-            if board[x][y][0] is space[0][0] and space[0][1] is not board[x][y][1]:
-                print board[x][y][1]
-                print space[0][1]
-                return True
-        else:
-            return False
-
-
-
-        # adjacentSpaces = []
+        adjacentSpaces = []
         
-        # if x in range(1,6):
-        #     adjacentSpaces.append(board[x+1][y])
-        #     adjacentSpaces.append(board[x-1][y])
+        # Get all spaces next to the space in question
+        if x in range(1,6):
+            adjacentSpaces.append(board[x+1][y])
+            adjacentSpaces.append(board[x-1][y])
 
-        # if y in range(1,6):
-        #     adjacentSpaces.append(board[x][y+1])
-        #     adjacentSpaces.append(board[x][y-1])
+        if y in range(1,6):
+            adjacentSpaces.append(board[x][y+1])
+            adjacentSpaces.append(board[x][y-1])
 
-        # if x in range(1,6) and y in range(1,6):
-        #     adjacentSpaces.append(board[x-1][y-1])
-        #     adjacentSpaces.append(board[x+1][y+1])
-        #     adjacentSpaces.append(board[x-1][y+1])
-        #     adjacentSpaces.append(board[x+1][y-1])
+        if x in range(1,6) and y in range(1,6):
+            adjacentSpaces.append(board[x-1][y-1])
+            adjacentSpaces.append(board[x+1][y+1])
+            adjacentSpaces.append(board[x-1][y+1])
+            adjacentSpaces.append(board[x+1][y-1])
 
-        # for space in moves:
-        #     if space[0][0] in adjacentSpaces:
-        #         turn = originalTurn
-        #         return True
-
-        # turn = originalTurn
-        # return False
+        # If one of the adjacent spaces is a valid move this space is unstable
+        for space in moves:
+            if space[0] in adjacentSpaces:
+                return True
+        
+        return False
     
+    # Check if the space at the coordinates is stable
     def checkStable(self, board, stableSpaces, x, y):
 
         # check left and right
@@ -877,47 +981,57 @@ class Othello_AI:
         for zy in range(0,y):
             if board[x][zy][1] is "e":
                 stableHor = False
+        
         if stableHor is not False:
             for zy in range(y,8):
                 if board[x][zy][1] is "e":
                     stableHor = False
-        # if row isn't full, piece is stable horizontally if it's next to an edge or another stable piece
+       
+       # if row isn't full, piece is stable horizontally if it's next to an edge or another stable piece
         if stableHor is False:
             if y is 0 or y is 7:
                 stableHor = True
+            
             elif y in range(1,7):
                 if board[x][y - 1] in stableSpaces or board[x][y + 1] in stableSpaces:
                     stableHor = True
         
         # check vertically
+        # Piece is stable verticall if column is full
         stableVert = True
         for zx in range(0,x):
             if board[zx][y][1] is "e":
                 stableVert = False
+        
         if stableVert is not False:
             for zx in range(x,8):
                 if board[zx][y][1] is "e":
                     stableVert = False
+        
         # if column isn't full, piece is stable vertically if it's next to an edge or another stable piece
         if stableVert is False:
             if x is 0 or x is 7:
                 stableVert = True
+            
             elif x in range(1,7):
                 if board[x - 1][y] in stableSpaces and board[x - 1][y] in board or board[x + 1][y] in stableSpaces and board[x + 1][y] in board:
                     stableVert = True
         
-        # check diagonals
+        # check diagonal axes the same way as horizontal and vertial
         stableDiagBack = True
         for zx, zy in zip(range(0,x), range(0,y)):
             if board[zx][zy][1] is "e":
                 stableDiagBack = False
+        
         if stableDiagBack is False:
             for zx, zy in zip(range(x,8), range(y,8)):
                 if board[zx][zy][1] is "e":
                     stableDiagBack = False
+        
         if stableDiagBack is False:
             if x is 0 and y is 0 or x is 7 and y is 7:
                 stableDiagBack = True
+            
             elif x in range(1,7) and y in range(1,7):
                 if board[x - 1][y - 1] in stableSpaces or board[x + 1][y + 1] in stableSpaces:
                     stableDiagBack = True
@@ -926,30 +1040,25 @@ class Othello_AI:
         for zx, zy in zip(range(0,x), range(y,8)):
             if board[zx][zy][1] is "e":
                 stableDiagFront = False
+        
         if stableDiagFront is False:
             for zx, zy in zip(range(x,8), range(0,y)):
                 if board[zx][zy][1] is "e":
                     stableDiagFront = False
+        
         if stableDiagFront is False:
             if x is 0 and y is 0 or x is 7 and y is 7:
                 stableDiagFront = True
+            
             elif x in range(1,7) and y in range(1,7):
                 if board[x + 1][y - 1] in stableSpaces or board[x -1][y + 1] in stableSpaces:
                     stableDiagFront = True
 
+        # If a piece is table in all directions then it is stable
         if stableHor and stableVert and stableDiagBack and stableDiagFront:
             return True
         else:
             return False
-
-    def printTree(self, node):
-
-        printBoard(node.data)
-        print
-
-        if node.children:
-            for child in node.children:
-                self.printTree(child)
 
 # Main       
 
@@ -973,12 +1082,13 @@ gameBoard, boardBackground = createBoard()
 # Create text
 createText()
 
-
+# Initalize AI
 comp = Othello_AI(3, deepcopy(gameBoard))
 
 drawBoard(gameBoard, boardBackground)
 drawText(screen)
 pygame.display.flip()
+
 validMoves = getValidSpaces(gameBoard)
 
 # Main game loop
@@ -986,30 +1096,46 @@ done = False
 while not done:
     
     # Main events loop
-    # If the x button on the window is clicked, end the game
+    
 
+    # If a human player has no moves left
     if (turn is player1Color or turn is player2Color and compActive is False) and len(validMoves) is 0:
-        
+        # Check if a game over state has been reached
         if checkGameOver(gameBoard) is True:
-            
             gameOver = True
-            
             if player1Score > player2Score:
                 setBottomText("Player 1 Wins!", screen)
             
             else:
-                setBottomText("Player 2 Wins!", screen)
+                if compActive is True:
+                    setBottomText("The AI has won.", screen)
+                
+                else:
+                    setBottomText("Player 2 Wins!", screen)
                 
             updateBoard()
         
+        # Otherwise the player forefeits their turn
         else:
-            forefietTurn(screen)
+            forefeitTurn(screen)
 
     
-
+    
     for event in pygame.event.get():
+        # If the x button on the window is clicked, end the game
         if event.type is pygame.QUIT:
             done = True
+
+        # If the d key is pressed enable debug mode for minimax
+        if event.type is pygame.KEYDOWN:
+            if event.key is pygame.K_d:
+                if DEBUG is True:
+                    print "Debug off.\n"
+                    DEBUG = False
+                
+                else:
+                    print "Debug on.\n"
+                    DEBUG = True
 
         # If the mouse moves or is clicked
         if (compActive is False or compActive is True and turn is player1Color) and gameOver is False:
@@ -1031,8 +1157,6 @@ while not done:
                             # if it was a click place a piece
                             elif event.type is pygame.MOUSEBUTTONUP and square[1] is "h":
                                 
-                                print validMoves
-                                
                                 flipLines(square, validMoves, gameBoard)
                                 
                                 square[1] = turn
@@ -1044,8 +1168,10 @@ while not done:
                                 updateTurn()
                                 validMoves = getValidSpaces(gameBoard)
                                 
+                                # Update the score
+                                updateScore()
                                 updateBoard()
-                            
+            
                         # Un-highlight any square the mouse doesn't touch or isn't valid
                         elif square[1] is "h":
                             square[1] = "e"
@@ -1053,24 +1179,30 @@ while not done:
         elif compActive is True and turn is player2Color and gameOver is False:
             # AI turn
             # Generate new tree
-
-            print "AI taking turn."
-            #sleep(1)
-            print "Generating tree"
+            print "AI is thinking...\n"
+            sleep(1)
             decisionTree, nextMove = comp.generateTree()
-            print "Tree Generated"
             # Make the best move
             if nextMove is not None:
+                print "AI Move"
                 printBoard(nextMove)
+                print
+                # Set gameBoard to AI's new move
                 gameBoard = deepcopy(nextMove)
+                # Update the board state for the AI
                 comp.setCurrentBoardState(gameBoard)
+                
                 updateTurn()
                 validMoves = getValidSpaces(gameBoard)
+                updateScore()
                 updateBoard()
+            
             else:
-                print "AI has lost?"
+                # AI forefiets their turn if it has no moves
+                print "AI found no moves."
                 updateTurn()
                 validMoves = getValidSpaces(gameBoard)
+                # Update the score
+                updateScore()
                 updateBoard()
-
     updateBoard()
