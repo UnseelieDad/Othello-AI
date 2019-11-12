@@ -720,6 +720,7 @@ class Othello_AI:
         
         for child in source.children:
             if nextMove is child.heuristic: 
+                print "AI selected move {}".format(child.move)
                 nextMove = child.data
                 break
 
